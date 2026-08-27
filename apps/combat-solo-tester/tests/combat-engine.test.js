@@ -247,4 +247,57 @@ runEngineTest(`
   }
 `);
 
+runEngineTest(`
+  commit=()=>{};
+  save=()=>{};
+  state.tweaks=defaultTweaks();
+  startEncounter("bandits");
+  let ardan=state.battle.pcs.find(p=>p.id==="ardan"),bruiser=state.battle.enemies.find(e=>e.type==="bruiser");
+  ardan.ap=3;
+  resolveEnemyHit(bruiser,ardan,"Concussive Blow",50,{id:"none"},false,"Incapacitated",()=>{});
+  assert.ok(ardan.conditions.includes("Incapacitated"),"A damaging Concussive Blow causes Incapacitated");
+  assert.equal(ardan.ap,1,"Incapacitated immediately caps current AP at one");
+  assert.ok(!legalReactions(ardan,bruiser,false).some(x=>["defend","gale"].includes(x.id)),"An Incapacitated target cannot personally react");
+  assert.ok(!legalBasic(ardan,ardan.abilities.find(a=>a.id==="strike")),"An Incapacitated PC cannot attack");
+  assert.ok(legalBasic(ardan,{id:"recover"}),"An Incapacitated PC may Recover");
+  assert.ok(state.battle.log.some(x=>x.text==="Ardan becomes Incapacitated."),"The condition is announced in the combat log");
+`);
+
+runEngineTest(`
+  commit=()=>{};
+  save=()=>{};
+  state.tweaks=defaultTweaks();
+  startEncounter("bandits");
+  let ardan=state.battle.pcs.find(p=>p.id==="ardan"),bruiser=state.battle.enemies.find(e=>e.type==="bruiser");
+  ardan.def=100;
+  resolveEnemyHit(bruiser,ardan,"Concussive Blow",50,{id:"defend"},true,"Incapacitated",()=>{});
+  assert.ok(!ardan.conditions.includes("Incapacitated"),"A zero-damage Concussive Blow does not cause Incapacitated");
+`);
+
+runEngineTest(`
+  commit=()=>{};
+  save=()=>{};
+  state.tweaks=defaultTweaks();
+  startEncounter("bandits");
+  let ardan=state.battle.pcs.find(p=>p.id==="ardan");
+  ardan.control="allout"; ardan.conditions=["Incapacitated"]; ardan.ap=1;
+  state.battle.selected=ardan.id;
+  runAutomatedTurn(ardan);
+  assert.ok(!ardan.conditions.includes("Incapacitated"),"An automated PC Recovers from Incapacitated");
+  assert.equal(ardan.ap,0,"Recover spends the Incapacitated PC's only AP");
+  assert.ok(state.battle.log.some(x=>x.text.includes("only AP Recovering from Incapacitated")),"Automated Recover is explained in the log");
+`);
+
+runEngineTest(`
+  commit=()=>{};
+  save=()=>{};
+  state.tweaks=defaultTweaks();
+  startEncounter("bandits");
+  continuePCPhase=()=>{};
+  let ardan=state.battle.pcs.find(p=>p.id==="ardan");
+  ardan.conditions=["Incapacitated"];
+  endRound();
+  assert.equal(ardan.ap,1,"An Incapacitated PC refreshes to only one AP");
+`);
+
 console.log("combat-engine tests passed");
