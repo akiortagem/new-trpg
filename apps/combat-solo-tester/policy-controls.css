@@ -1,0 +1,44 @@
+.tweak-grid input,
+.tweak-grid select {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: white;
+}
+
+.tweak-grid .select-field {
+  grid-template-columns: 1fr 120px;
+  margin-top: 14px;
+}
+
+.tweak-grid .range-field {
+  grid-template-columns: 1fr 40px;
+}
+
+.tweak-grid .range-field input {
+  grid-column: 1 / -1;
+  padding: 0;
+}
+
+.tweak-grid [hidden] {
+  display: none;
+}
+
+.turn-summary {
+  max-height: 55vh;
+  overflow: auto;
+  margin: 14px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+}
+
+.turn-summary p {
+  margin: 0 0 8px;
+}
+
+.turn-summary p:last-child {
+  margin-bottom: 0;
+}
