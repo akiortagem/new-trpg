@@ -108,6 +108,63 @@ runEngineTest(`
 runEngineTest(`
   commit=()=>{};
   save=()=>{};
+  reactionPrompt=(e,target,name,atk,multi=false,condition=null,done=()=>{})=>resolveEnemyHit(e,target,name,atk,{id:"none"},multi,condition,done);
+  state.tweaks=defaultTweaks();
+  startEncounter("bandits");
+  let bruiser=state.battle.enemies.find(e=>e.type==="bruiser"),target=state.battle.pcs.find(p=>p.id==="ardan");
+  bruiser.zone=target.zone; bruiser.ap=3;
+  runBanditStep(bruiser,()=>{});
+  let bruiserActions=state.battle.log.filter(x=>x.text.startsWith("Bruiser 1's")).map(x=>x.text);
+  assert.equal(bruiserActions.filter(x=>x.includes("Concussive Blow")).length,1,"A 3-AP bruiser uses only one 2-AP Concussive Blow");
+  assert.equal(bruiserActions.filter(x=>x.includes("Strike")).length,1,"The bruiser may spend its final AP on one Strike");
+  assert.equal(bruiser.ap,0,"Bruiser attacks consume their full listed AP costs");
+  bruiser.zone=1; bruiser.ap=3;
+  let movedBruiserStart=state.battle.log.length;
+  runBanditStep(bruiser,()=>{});
+  let movedBruiserActions=state.battle.log.slice(movedBruiserStart).map(x=>x.text);
+  assert.equal(movedBruiserActions.filter(x=>x.includes("Bruiser 1 moves")).length,1,"Bruiser spends 1 AP moving into range");
+  assert.equal(movedBruiserActions.filter(x=>x.includes("Bruiser 1's Concussive Blow")).length,1,"Moved bruiser spends its remaining 2 AP on Concussive Blow");
+  assert.equal(movedBruiserActions.filter(x=>x.includes("Bruiser 1's Strike")).length,0,"Moved bruiser cannot make an extra Strike");
+  assert.equal(bruiser.ap,0,"Move plus Concussive Blow exhausts a bruiser's 3 AP");
+  let archer=state.battle.enemies.find(e=>e.type==="archer");
+  archer.zone=target.zone; archer.ap=2;
+  let before=state.battle.log.length;
+  runBanditStep(archer,()=>{});
+  let archerActions=state.battle.log.slice(before).filter(x=>x.text.startsWith("Archer 1's"));
+  assert.equal(archerActions.filter(x=>x.text.includes("Aimed Shot")).length,1,"A 2-AP archer uses one Aimed Shot");
+  assert.equal(archer.ap,0,"Aimed Shot consumes 2 AP");
+  assert.ok(state.battle.enemies.every(e=>e.ap>=0),"No NPC AP balance becomes negative");
+`);
+
+runEngineTest(`
+  commit=()=>{};
+  save=()=>{};
+  state.tweaks=defaultTweaks();
+  startEncounter("bandits");
+  let pc=state.battle.pcs.find(p=>p.id==="ardan"),enemy=state.battle.enemies.find(e=>e.type==="melee"),ability=pc.abilities.find(a=>a.id==="strike");
+  enemy.ap=2;
+  resolvePCAttack(pc,ability,[enemy]);
+  assert.equal(enemy.ap,1,"NPC Defend spends AP during the PC phase");
+  processEnemy=()=>{};
+  enemyPhase();
+  assert.equal(enemy.ap,1,"Enemy phase does not refresh AP spent on reactions");
+`);
+
+runEngineTest(`
+  commit=()=>{};
+  save=()=>{};
+  state.tweaks=defaultTweaks();
+  startEncounter("bandits");
+  let ardan=state.battle.pcs.find(p=>p.id==="ardan"),sera=state.battle.pcs.find(p=>p.id==="sera"),enemy=state.battle.enemies.find(e=>e.type==="bruiser");
+  ardan.control="allout"; ardan.hp=100; sera.control="prepared"; sera.ap=1; sera.stamina=20; sera.zone=ardan.zone; enemy.zone=ardan.zone;
+  reactionPrompt(enemy,ardan,"Strike",50,false,null,()=>{});
+  assert.ok(state.battle.log.some(x=>x.text.startsWith("Sera's Always Prepared doctrine chooses Sera uses Shielded Intercession")),"Shielded Intercession is attributed to Sera and her doctrine");
+  assert.ok(!state.battle.log.some(x=>x.text.startsWith("Ardan's Always Prepared")),"The protected target is not mislabeled with Sera's doctrine");
+`);
+
+runEngineTest(`
+  commit=()=>{};
+  save=()=>{};
   state.tweaks=defaultTweaks();
   startEncounter("bandits");
   let ardan=state.battle.pcs.find(p=>p.id==="ardan");
