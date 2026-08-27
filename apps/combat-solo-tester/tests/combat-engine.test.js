@@ -73,6 +73,11 @@ runEngineTest(`
   enemy.ap=1;
   resolvePCAttack(pc,ability,[enemy]);
   assert.ok(state.battle.log.some(entry=>entry.text.includes("vs TN 80")),"Defense roll log includes its target number");
+  assert.equal(state.battle.metrics.npcDefRolls,1,"An NPC defense roll increments only the NPC counter");
+  assert.equal(state.battle.metrics.pcDefRolls,0,"An NPC defense roll does not increment the PC counter");
+  resolveEnemyHit(enemy,pc,"Strike",35,{id:"defend"},false,null,()=>{});
+  assert.equal(state.battle.metrics.npcDefRolls,1,"A PC defense roll does not increment the NPC counter");
+  assert.equal(state.battle.metrics.pcDefRolls,1,"A PC defense roll increments only the PC counter");
 `);
 
 runEngineTest(`
