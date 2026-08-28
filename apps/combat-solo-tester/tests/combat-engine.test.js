@@ -467,7 +467,34 @@ runEngineTest(`
     document.querySelector("#aiNext").onclick();
     assert.ok(ardan.acted,"Pressing Next executes the validated end-turn choice");
     assert.equal(ardan.ap,ardan.maxAp,"The AI may legally retain AP by ending its turn");
-  `,async(url,request)=>{let body=JSON.parse(request.body),end=body.text.format.schema.properties.choice_id.enum.find(x=>x==="end");return{ok:true,status:200,json:async()=>({output_text:JSON.stringify({choice_id:end,reasoning:"Retain AP for reactions."}),usage:{input_tokens:8,output_tokens:4,total_tokens:12}})}});
+  `,async(url,request)=>{let body=JSON.parse(request.body),prompt=JSON.parse(body.input[1].content),end=prompt.legal_choices.find(x=>x.label==="End turn");return{ok:true,status:200,json:async()=>({output_text:JSON.stringify({choice_id:end.choice_id,reasoning:"Retain AP for reactions."}),usage:{input_tokens:8,output_tokens:4,total_tokens:12}})}});
+
+  let pcSegmentCalls=0;
+  await runAsyncEngineTest(`
+    commit=()=>{};
+    save=()=>{};
+    localStorage.setItem(AI_KEY_STORAGE,"test-secret-key");
+    state.tweaks=defaultTweaks();
+    startEncounter("bandits");
+    let sera=state.battle.pcs.find(p=>p.id==="sera"),target=state.battle.enemies.find(e=>e.type==="melee"),startHp=target.hp;
+    sera.control="ai"; state.battle.selected=sera.id;
+    await runAITurn(sera);
+    assert.equal(state.battle.metrics.ai.requests,1,"Move and attack are selected by one initial PC API call");
+    document.querySelector("#aiNext").onclick();
+    await new Promise(resolve=>setTimeout(resolve,0));
+    assert.equal(sera.zone,target.zone,"The deterministic movement preceding the attack executes from the same segment");
+    assert.ok(target.hp<startHp,"The attack at the segment's uncertainty boundary executes");
+    assert.equal(state.battle.metrics.ai.requests,2,"A fresh API call occurs only after the uncertain attack resolves");
+    document.querySelector("#aiNext").onclick();
+    assert.ok(sera.acted,"The second segment can end the PC turn");
+  `,async(url,request)=>{
+    pcSegmentCalls++;
+    let body=JSON.parse(request.body),prompt=JSON.parse(body.input[1].content),choices=prompt.legal_choices;
+    let choice=pcSegmentCalls===1?choices.find(x=>x.label.includes("Move to Gate")&&x.label.includes("Shield Bash")):choices.find(x=>x.label==="End turn");
+    assert.ok(choice,"The request supplies the expected legal PC action segment");
+    return{ok:true,status:200,json:async()=>({output_text:JSON.stringify({choice_id:choice.choice_id,reasoning:"Use the supplied legal segment."}),usage:{input_tokens:12,output_tokens:5,total_tokens:17}})};
+  });
+  assert.equal(pcSegmentCalls,2,"The move does not consume a separate API request");
 
   let phaseCalls=0;
   await runAsyncEngineTest(`
@@ -494,6 +521,20 @@ runEngineTest(`
     return{ok:true,status:200,json:async()=>({output_text:JSON.stringify({reasoning:"Hold position.",plans}),usage:{input_tokens:20,output_tokens:8,total_tokens:28}})};
   });
   assert.equal(phaseCalls,1,"A complete multi-NPC phase makes exactly one fetch call");
+
+  runEngineTest(`
+    state.tweaks=defaultTweaks();
+    startEncounter("bandits");
+    let archer=state.battle.enemies.find(e=>e.type==="archer"),leader=state.battle.enemies.find(e=>e.type==="leader");
+    let archerPlans=legalAINPCTurnPlans(archer).sequences,leaderPlans=legalAINPCTurnPlans(leader).sequences;
+    assert.ok(!archerPlans.some(x=>x.action_ids[0]==="aimed:mira"),"An archer is not offered an out-of-range Aimed Shot as its first action");
+    assert.ok(!leaderPlans.some(x=>x.action_ids[0]==="move:1"),"A leader is not offered a non-adjacent move as its first action");
+    assert.ok(leaderPlans.some(x=>x.action_ids[0]==="move:2"&&x.action_ids[1]==="move:1"),"The same destination remains available through a legal two-step sequence");
+    let melee=state.battle.enemies.find(e=>e.type==="melee"); melee.zone=state.battle.pcs[0].zone; melee.ap=1;
+    state.battle.pcs[0].hp=0;
+    let repaired=repairAINPCAction(melee,"strike:ardan");
+    assert.ok(repaired.id.startsWith("strike:")&&!repaired.id.endsWith(":ardan"),"A stale defeated target is replaced without ending the NPC turn");
+  `);
 
   runEngineTest(`
     commit=()=>{};

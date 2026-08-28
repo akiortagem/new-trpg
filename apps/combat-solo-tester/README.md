@@ -12,7 +12,7 @@ The screen can also override every enemy archetype's count, HP, AP, ATK, DEF, Do
 
 Each PC can independently use one of five model behaviors: Inexperienced Player, Reckless Hero, Self-Preserving, Role-Faithful, or Optimal Tactician. Each enemy archetype can independently use Optimal Killer, Self-Preserving, or Dramatic GM. AI actors know the battlefield but pursue their own priorities rather than sharing one side-wide plan.
 
-AI-controlled PCs remain under the player's turn-order control. Select a PC and press **Start AI turn**; the model then chooses one currently legal action at a time, with **Next** between choices. The enemy phase uses one request to plan every AI-controlled NPC's complete normal turn. The rules engine revalidates each planned action against current AP, position, targets, and conditions immediately before execution.
+AI-controlled PCs remain under the player's turn-order control. Select a PC and press **Start AI turn**; the model chooses a legal action segment that combines deterministic setup such as movement with the first uncertain action. After that result is resolved, the model is called again only if the PC can continue. The enemy phase uses one request to plan every AI-controlled NPC's complete normal turn. The rules engine revalidates each planned action against current AP, position, targets, and conditions immediately before execution.
 
 Defend and Protect never call the API. PC and NPC behavior presets resolve those reactions locally: aggressive presets conserve AP, survival presets defend readily, role-faithful Sera protects endangered allies, and optimal presets react when the expected mitigation or knockout prevention justifies it. Troll Boss Edges remain separate off-turn decisions.
 
