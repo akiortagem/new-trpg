@@ -67,6 +67,27 @@ runEngineTest(`
 runEngineTest(`
   commit=()=>{};
   save=()=>{};
+  reactionPrompt=(e,target,name,atk,multi=false,condition=null,done=()=>{})=>resolveEnemyHit(e,target,name,atk,{id:"none"},multi,condition,done);
+  state.tweaks=defaultTweaks();
+  assert.equal(state.tweaks.troll.troll.bossEdgesEnabled,true,"Boss Edges default to enabled");
+  state.tweaks.troll.troll.bossEdgesEnabled=false;
+  startEncounter("troll");
+  let troll=state.battle.enemies[0];
+  assert.equal(troll.edges,0,"A troll begins without Edges when the toggle is disabled");
+  troll.conditions=["Persistent Damage"];
+  trollEdgeOne(troll,()=>{});
+  assert.ok(troll.conditions.includes("Persistent Damage"),"A disabled Edge cannot Recover Persistent Damage");
+  assert.equal(state.battle.metrics.edgeRecover,0,"Disabled Edges never increment Edge recovery telemetry");
+  state.battle.pcs.slice(0,3).forEach(p=>p.acted=true);
+  state.battle.selected=state.battle.pcs[3].id;
+  endPCTurn();
+  assert.equal(troll.edges,0,"Disabled Edges remain disabled after round refresh");
+  assert.ok(state.battle.log.some(x=>x.text==="Boss Edges are disabled."),"The combat log records the disabled setting");
+`);
+
+runEngineTest(`
+  commit=()=>{};
+  save=()=>{};
   state.tweaks=defaultTweaks();
   startEncounter("bandits");
   let pc=state.battle.pcs.find(p=>p.id==="ardan"),enemy=state.battle.enemies.find(e=>e.type==="melee"),ability=pc.abilities.find(a=>a.id==="strike");
