@@ -10,6 +10,8 @@ Design documents, combat rules, playtest material, and test tooling for a classl
 
 ## Solo combat tester
 
+Play the hosted app at **https://akiortagem.github.io/new-trpg/**.
+
 Open `apps/combat-solo-tester/index.html` in a modern desktop browser. It does not require a server, installation, or internet connection.
 
 To run its executable rules-engine tests:
