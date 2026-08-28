@@ -12,7 +12,11 @@ The screen can also override every enemy archetype's count, HP, AP, ATK, DEF, Do
 
 Each PC can independently use one of five model behaviors: Inexperienced Player, Reckless Hero, Self-Preserving, Role-Faithful, or Optimal Tactician. Each enemy archetype can independently use Optimal Killer, Self-Preserving, or Dramatic GM. AI actors know the battlefield but pursue their own priorities rather than sharing one side-wide plan.
 
-The model chooses one currently legal action or reaction per request. The rules engine supplies the complete legal-choice list and rejects invented or stale choices. Each accepted choice pauses on a dialog showing the action and a short reason; **Next** executes it. After five failed or illegal responses, the app offers retry, manual intervention where applicable, deterministic fallback, or ending the actor's turn.
+AI-controlled PCs remain under the player's turn-order control. Select a PC and press **Start AI turn**; the model then chooses one currently legal action at a time, with **Next** between choices. The enemy phase uses one request to plan every AI-controlled NPC's complete normal turn. The rules engine revalidates each planned action against current AP, position, targets, and conditions immediately before execution.
+
+Defend and Protect never call the API. PC and NPC behavior presets resolve those reactions locally: aggressive presets conserve AP, survival presets defend readily, role-faithful Sera protects endangered allies, and optimal presets react when the expected mitigation or knockout prevention justifies it. Troll Boss Edges remain separate off-turn decisions.
+
+After five failed or illegal API responses, the app offers retry, manual intervention where applicable, deterministic fallback, or ending the actor's turn.
 
 The API key and editable model ID are configured on the tweak screen. The key is stored as plain text in the browser's local storage until **Clear key** is pressed. It is never included in encounter saves, prompts, combat logs, or reports. This mode is intended only for personal local testing; do not use it on a shared or untrusted browser profile.
 
