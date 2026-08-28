@@ -12,7 +12,7 @@ Design documents, combat rules, playtest material, and test tooling for a classl
 
 Play the hosted app at **https://akiortagem.github.io/new-trpg/**.
 
-Open `apps/combat-solo-tester/index.html` in a modern desktop browser. It does not require a server, installation, or internet connection.
+Open `apps/combat-solo-tester/index.html` in a modern desktop browser. It does not require a server or installation. Deterministic and manual play work offline; ChatGPT API control requires internet access and an OpenAI API key.
 
 To run its executable rules-engine tests:
 
@@ -20,7 +20,7 @@ To run its executable rules-engine tests:
 node apps/combat-solo-tester/tests/combat-engine.test.js
 ```
 
-The app autosaves active tests in browser local storage. Its pre-encounter screen supports direct PC and NPC stat overrides, NPC defense policies, manual PC control, and three automated PC doctrines.
+The app autosaves active tests in browser local storage. Its pre-encounter screen supports direct PC and NPC stat overrides, NPC defense policies, manual PC control, three deterministic PC doctrines, and optional per-action ChatGPT API control.
 
 ## Current rules artifacts
 
