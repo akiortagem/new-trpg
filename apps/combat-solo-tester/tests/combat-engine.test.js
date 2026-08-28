@@ -414,10 +414,12 @@ runEngineTest(`
     executeAINPCOption(bruiser,concussive,()=>{});
     assert.equal(bruiser.ap,0,"Executing an AI-selected Concussive Blow spends its full 2 AP");
     assert.ok(ardan.conditions.includes("Incapacitated"),"AI-selected Concussive Blow uses the complete rules-engine effect");
-    let sera=state.battle.pcs.find(p=>p.id==="sera"); ardan.control="ai"; sera.control="ai"; sera.zone=ardan.zone; sera.ap=2;
-    let reactions=legalReactions(ardan,bruiser,false),actors=aiReactionActors(ardan,reactions);
-    assert.equal(actors.target,ardan,"An AI target controls its own Defend decision");
-    assert.ok(actors.protectors.includes(sera),"An AI ally independently controls its Protect decision");
+    let sera=state.battle.pcs.find(p=>p.id==="sera"); ardan.control="ai"; ardan.aiBehavior="self_preserving"; ardan.hp=100; sera.control="ai"; sera.aiBehavior="role_faithful"; sera.zone=ardan.zone; sera.ap=2;
+    let reactions=legalReactions(ardan,bruiser,false),choice=aiPresetReaction(ardan,reactions,50,false);
+    assert.ok(["intercede","protectDefend","protect"].includes(choice.id),"Role-Faithful AI Sera deterministically Protects an endangered ally");
+    sera.ap=0; ardan.conditions=[];
+    choice=aiPresetReaction(ardan,legalReactions(ardan,bruiser,false),50,false);
+    assert.equal(choice.id,"defend","Self-Preserving AI deterministically Defends without an API request");
   `);
 
   runEngineTest(`
@@ -456,12 +458,61 @@ runEngineTest(`
     state.tweaks=defaultTweaks();
     startEncounter("bandits");
     let ardan=state.battle.pcs.find(p=>p.id==="ardan"); ardan.control="ai";
+    continuePCPhase();
+    assert.equal(state.battle.selected,null,"AI PCs are not auto-selected at the start of the PC phase");
+    state.battle.selected=ardan.id;
+    assert.ok(controlsHtml().includes("Start AI turn"),"Selecting an AI PC replaces its action list with Start AI turn");
     await runAITurn(ardan);
     assert.ok(document.querySelector("#aiNext").onclick,"An AI decision waits behind a Next button");
     document.querySelector("#aiNext").onclick();
     assert.ok(ardan.acted,"Pressing Next executes the validated end-turn choice");
     assert.equal(ardan.ap,ardan.maxAp,"The AI may legally retain AP by ending its turn");
   `,async(url,request)=>{let body=JSON.parse(request.body),end=body.text.format.schema.properties.choice_id.enum.find(x=>x==="end");return{ok:true,status:200,json:async()=>({output_text:JSON.stringify({choice_id:end,reasoning:"Retain AP for reactions."}),usage:{input_tokens:8,output_tokens:4,total_tokens:12}})}});
+
+  let phaseCalls=0;
+  await runAsyncEngineTest(`
+    commit=()=>{};
+    save=()=>{};
+    localStorage.setItem(AI_KEY_STORAGE,"test-secret-key");
+    state.tweaks=defaultTweaks();
+    for(const group of Object.values(state.tweaks.bandits))group.count=0;
+    state.tweaks.bandits.melee.count=2;
+    state.tweaks.bandits.melee.control="ai";
+    startEncounter("bandits");
+    state.battle.phase="enemy";
+    let continued=false,actors=state.battle.enemies.filter(isAIControlled);
+    await prepareAIEnemyPhase(()=>{continued=true});
+    assert.equal(state.battle.metrics.ai.requests,1,"Every AI NPC is planned in one API request");
+    assert.equal(continued,false,"The batched enemy plan waits behind a Next button");
+    document.querySelector("#aiNext").onclick();
+    assert.ok(continued,"Next accepts the complete batched enemy plan");
+    assert.deepEqual(Object.keys(state.battle.aiEnemyPlans).sort(),actors.map(a=>a.id).sort(),"The one response contains a plan for every AI NPC");
+  `,async(url,request)=>{
+    phaseCalls++;
+    let body=JSON.parse(request.body),situation=JSON.parse(body.input[1].content);
+    let plans=situation.actors.map(actor=>({actor_id:actor.id,action_ids:["end"]}));
+    return{ok:true,status:200,json:async()=>({output_text:JSON.stringify({reasoning:"Hold position.",plans}),usage:{input_tokens:20,output_tokens:8,total_tokens:28}})};
+  });
+  assert.equal(phaseCalls,1,"A complete multi-NPC phase makes exactly one fetch call");
+
+  runEngineTest(`
+    commit=()=>{};
+    save=()=>{};
+    state.tweaks=defaultTweaks();
+    startEncounter("bandits");
+    let enemy=state.battle.enemies[0],pc=state.battle.pcs[0],attack={power:55,type:"attack"};
+    enemy.control="ai"; enemy.ap=1; enemy.aiBehavior="self_preserving";
+    assert.equal(aiNPCShouldDefend(enemy,attack),true,"Self-Preserving NPCs always Defend when able");
+    enemy.aiBehavior="optimal_killer"; enemy.hp=100;
+    assert.equal(aiNPCShouldDefend(enemy,attack),false,"Optimal Killer preserves AP against nonlethal ordinary damage");
+    enemy.hp=50;
+    assert.equal(aiNPCShouldDefend(enemy,attack),true,"Optimal Killer Defends against lethal damage");
+    pc.control="ai"; pc.aiBehavior="reckless"; pc.ap=1;
+    let options=legalReactions(pc,enemy,false);
+    assert.equal(aiPresetReaction(pc,options,55,false).id,"none","Reckless Hero never Defends");
+    pc.aiBehavior="self_preserving";
+    assert.equal(aiPresetReaction(pc,options,55,false).id,"defend","Self-Preserving PC always Defends when able");
+  `);
 
   console.log("combat-engine tests passed");
 })().catch(error=>{console.error(error);process.exitCode=1});

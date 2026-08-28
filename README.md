@@ -20,7 +20,7 @@ To run its executable rules-engine tests:
 node apps/combat-solo-tester/tests/combat-engine.test.js
 ```
 
-The app autosaves active tests in browser local storage. Its pre-encounter screen supports direct PC and NPC stat overrides, NPC defense policies, manual PC control, three deterministic PC doctrines, and optional per-action ChatGPT API control.
+The app autosaves active tests in browser local storage. Its pre-encounter screen supports direct PC and NPC stat overrides, NPC defense policies, manual PC control, three deterministic PC doctrines, and optional ChatGPT API control. AI PC turns are player-triggered, AI NPC normal turns are batched into one request per enemy phase, and defensive reactions use local preset policies without API calls.
 
 ## Current rules artifacts
 
