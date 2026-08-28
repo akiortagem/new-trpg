@@ -496,6 +496,20 @@ runEngineTest(`
   assert.equal(phaseCalls,1,"A complete multi-NPC phase makes exactly one fetch call");
 
   runEngineTest(`
+    state.tweaks=defaultTweaks();
+    startEncounter("bandits");
+    let archer=state.battle.enemies.find(e=>e.type==="archer"),leader=state.battle.enemies.find(e=>e.type==="leader");
+    let archerPlans=legalAINPCTurnPlans(archer).sequences,leaderPlans=legalAINPCTurnPlans(leader).sequences;
+    assert.ok(!archerPlans.some(x=>x.action_ids[0]==="aimed:mira"),"An archer is not offered an out-of-range Aimed Shot as its first action");
+    assert.ok(!leaderPlans.some(x=>x.action_ids[0]==="move:1"),"A leader is not offered a non-adjacent move as its first action");
+    assert.ok(leaderPlans.some(x=>x.action_ids[0]==="move:2"&&x.action_ids[1]==="move:1"),"The same destination remains available through a legal two-step sequence");
+    let melee=state.battle.enemies.find(e=>e.type==="melee"); melee.zone=state.battle.pcs[0].zone; melee.ap=1;
+    state.battle.pcs[0].hp=0;
+    let repaired=repairAINPCAction(melee,"strike:ardan");
+    assert.ok(repaired.id.startsWith("strike:")&&!repaired.id.endsWith(":ardan"),"A stale defeated target is replaced without ending the NPC turn");
+  `);
+
+  runEngineTest(`
     commit=()=>{};
     save=()=>{};
     state.tweaks=defaultTweaks();
