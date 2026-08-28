@@ -522,6 +522,30 @@ runEngineTest(`
   });
   assert.equal(phaseCalls,1,"A complete multi-NPC phase makes exactly one fetch call");
 
+  let executedPhaseCalls=0;
+  await runAsyncEngineTest(`
+    commit=()=>{};
+    save=()=>{};
+    localStorage.setItem(AI_KEY_STORAGE,"test-secret-key");
+    state.tweaks=defaultTweaks();
+    for(const group of Object.values(state.tweaks.bandits))group.count=0;
+    state.tweaks.bandits.archer.count=1;
+    state.tweaks.bandits.archer.control="ai";
+    startEncounter("bandits");
+    enemyPhase();
+    await new Promise(resolve=>setTimeout(resolve,0));
+    assert.ok(document.querySelector("#aiNext").onclick,"The complete enemy plan waits behind Next");
+    document.querySelector("#aiNext").onclick();
+    assert.ok(state.battle.log.some(x=>x.text.includes("Archer 1 moves to Camp")),"Pressing Next executes and logs the stored enemy plan");
+    assert.equal(state.battle.round,2,"The executed batched plan completes the enemy phase");
+  `,async(url,request)=>{
+    executedPhaseCalls++;
+    let body=JSON.parse(request.body),situation=JSON.parse(body.input[1].content);
+    let plans=situation.actors.map(actor=>{let sequence=actor.legal_turn_sequences.find(x=>x.label.includes("Move to Camp"));assert.ok(sequence,"The archer receives a legal movement sequence");return{actor_id:actor.id,action_ids:sequence.action_ids}});
+    return{ok:true,status:200,json:async()=>({output_text:JSON.stringify({reasoning:"Move into the camp.",plans}),usage:{input_tokens:20,output_tokens:8,total_tokens:28}})};
+  });
+  assert.equal(executedPhaseCalls,1,"Executing the batched enemy phase does not make another request");
+
   runEngineTest(`
     state.tweaks=defaultTweaks();
     startEncounter("bandits");
