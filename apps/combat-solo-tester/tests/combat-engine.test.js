@@ -17,8 +17,23 @@ function runEngineTest(testSource){
   const storage=new Map();
   const context={assert,document,window:{print(){}},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},confirm:()=>true,console,Date,Math,setTimeout,clearTimeout};
   vm.createContext(context);
+  const aiSource=fs.readFileSync(require.resolve("../ai-controller.js"),"utf8");
   const appSource=fs.readFileSync(require.resolve("../app.js"),"utf8");
-  vm.runInContext(appSource+"\n"+testSource,context,{timeout:2000});
+  vm.runInContext(aiSource+"\n"+appSource+"\n"+testSource,context,{timeout:2000});
+}
+
+async function runAsyncEngineTest(testSource,fetchMock){
+  const elements=new Map();
+  const document={
+    querySelector(selector){if(!elements.has(selector))elements.set(selector,new FakeElement());return elements.get(selector)},
+    querySelectorAll(){return []}
+  };
+  const storage=new Map();
+  const context={assert,document,window:{print(){}},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},fetch:fetchMock,confirm:()=>true,console,Date,Math,setTimeout,clearTimeout};
+  vm.createContext(context);
+  const aiSource=fs.readFileSync(require.resolve("../ai-controller.js"),"utf8");
+  const appSource=fs.readFileSync(require.resolve("../app.js"),"utf8");
+  return vm.runInContext(`(async()=>{${aiSource}\n${appSource}\n${testSource}})()`,context,{timeout:4000});
 }
 
 runEngineTest(`
@@ -321,4 +336,132 @@ runEngineTest(`
   assert.equal(ardan.ap,1,"An Incapacitated PC refreshes to only one AP");
 `);
 
-console.log("combat-engine tests passed");
+(async()=>{
+  let calls=[];
+  await runAsyncEngineTest(`
+    commit=()=>{};
+    save=()=>{};
+    localStorage.setItem(AI_KEY_STORAGE,"test-secret-key");
+    localStorage.setItem(AI_MODEL_STORAGE,"test-model");
+    state.tweaks=defaultTweaks();
+    state.tweaks.pcs.ardan.aiBehavior="optimal";
+    startEncounter("bandits");
+    let ardan=state.battle.pcs.find(p=>p.id==="ardan"); ardan.control="ai";
+    let options=legalAIPCOptions(ardan);
+    assert.ok(options.length>1,"An AI PC receives fully specified legal choices");
+    assert.equal(new Set(options.map(x=>x.id)).size,options.length,"Every AI choice ID is unique");
+    let decision=await requestAIDecision(ardan,"PC action",options);
+    assert.equal(decision.choice_id,options[0].id,"The fifth valid response is accepted");
+    assert.equal(state.battle.metrics.ai.requests,5,"Each retry is counted as an API request");
+    assert.equal(state.battle.metrics.ai.retries,4,"Four retries are recorded before the valid fifth response");
+    assert.equal(state.battle.metrics.ai.decisions,1,"Only the valid choice becomes a decision record");
+    assert.equal(state.battle.aiDecisions[0].behavior,"Optimal Tactician");
+    assert.ok(!JSON.stringify(state).includes("test-secret-key"),"The API key is excluded from autosaved encounter state");
+  `,async(url,request)=>{
+    calls.push({url,request});
+    let attempt=calls.length,body=JSON.parse(request.body),choice=body.text.format.schema.properties.choice_id.enum[0];
+    return{ok:true,status:200,json:async()=>({output_text:JSON.stringify({choice_id:attempt<5?"illegal-choice":choice,reasoning:"Test reasoning"}),usage:{input_tokens:10,output_tokens:4,total_tokens:14}})};
+  });
+  assert.equal(calls.length,5,"The client stops retrying after a valid fifth response");
+  assert.equal(calls[0].url,"https://api.openai.com/v1/responses");
+  let firstBody=JSON.parse(calls[0].request.body),firstSituation=JSON.parse(firstBody.input[1].content);
+  assert.equal(firstBody.store,false,"API responses are not stored by OpenAI");
+  assert.ok(!calls[0].request.body.includes("test-secret-key"),"The API key never appears in the request body or prompt");
+  assert.equal(firstSituation.battlefield.opponents[0].hp,undefined,"PC prompts do not reveal exact enemy HP");
+  assert.ok(firstSituation.battlefield.opponents[0].health,"PC prompts include only the visible qualitative enemy health");
+
+  let failedCalls=0;
+  await runAsyncEngineTest(`
+    commit=()=>{};
+    save=()=>{};
+    localStorage.setItem(AI_KEY_STORAGE,"test-secret-key");
+    state.tweaks=defaultTweaks();
+    startEncounter("bandits");
+    let ardan=state.battle.pcs.find(p=>p.id==="ardan"),caught=null;
+    try{await requestAIDecision(ardan,"PC action",legalAIPCOptions(ardan))}catch(error){caught=error}
+    assert.ok(caught,"Five unusable responses surface a failure");
+    assert.equal(caught.attemptErrors.length,5,"The failure exposes all five attempt errors");
+    assert.equal(state.battle.metrics.ai.failures,5,"Every failed attempt is recorded");
+  `,async()=>{failedCalls++;return{ok:true,status:200,json:async()=>({output_text:"not json",usage:{}})}});
+  assert.equal(failedCalls,5,"The client stops after exactly five failed attempts");
+
+  runEngineTest(`
+    commit=()=>{};
+    save=()=>{};
+    state.tweaks=defaultTweaks();
+    assert.equal(state.tweaks.pcs.ardan.aiBehavior,"role_faithful","PCs receive a default selectable AI behavior");
+    assert.equal(state.tweaks.bandits.melee.control,"rigid","NPC archetypes remain deterministic by default");
+    assert.equal(state.tweaks.bandits.melee.aiBehavior,"optimal_killer","NPC archetypes receive a default selectable AI behavior");
+    state.tweaks.bandits.bruiser.control="ai";
+    localStorage.setItem(AI_KEY_STORAGE,"test-secret-key");
+    startEncounter("bandits");
+    let bruiser=state.battle.enemies.find(e=>e.type==="bruiser"),ardan=state.battle.pcs.find(p=>p.id==="ardan");
+    bruiser.zone=ardan.zone; bruiser.ap=2;
+    let options=legalAINPCOptions(bruiser);
+    assert.ok(options.some(x=>x.name==="Concussive Blow"&&x.cost===2),"AI bruisers are offered their legal 2-AP ability");
+    assert.ok(options.every(x=>!x.cost||x.cost<=bruiser.ap),"AI NPC choices never exceed current AP");
+  `);
+
+  runEngineTest(`
+    commit=()=>{};
+    save=()=>{};
+    reactionPrompt=(e,target,name,atk,multi=false,condition=null,done=()=>{})=>resolveEnemyHit(e,target,name,atk,{id:"none"},multi,condition,done);
+    state.tweaks=defaultTweaks();
+    startEncounter("bandits");
+    let bruiser=state.battle.enemies.find(e=>e.type==="bruiser"),ardan=state.battle.pcs.find(p=>p.id==="ardan");
+    bruiser.control="ai"; bruiser.zone=ardan.zone; bruiser.ap=2;
+    let concussive=legalAINPCOptions(bruiser).find(x=>x.name==="Concussive Blow"&&x.targetIds.includes(ardan.id));
+    executeAINPCOption(bruiser,concussive,()=>{});
+    assert.equal(bruiser.ap,0,"Executing an AI-selected Concussive Blow spends its full 2 AP");
+    assert.ok(ardan.conditions.includes("Incapacitated"),"AI-selected Concussive Blow uses the complete rules-engine effect");
+    let sera=state.battle.pcs.find(p=>p.id==="sera"); ardan.control="ai"; sera.control="ai"; sera.zone=ardan.zone; sera.ap=2;
+    let reactions=legalReactions(ardan,bruiser,false),actors=aiReactionActors(ardan,reactions);
+    assert.equal(actors.target,ardan,"An AI target controls its own Defend decision");
+    assert.ok(actors.protectors.includes(sera),"An AI ally independently controls its Protect decision");
+  `);
+
+  runEngineTest(`
+    commit=()=>{};
+    save=()=>{};
+    state.tweaks=defaultTweaks();
+    startEncounter("troll");
+    let troll=state.battle.enemies[0]; troll.control="ai"; troll.conditions=["Persistent Damage"];
+    let options=legalAITrollEdgeOptions(troll);
+    assert.ok(options.some(x=>x.kind==="edge_recover"),"An AI troll can choose Edge Recover when Persistent Damage suppresses Regeneration");
+    let recover=options.find(x=>x.kind==="edge_recover"),before=troll.edges;
+    executeAITrollEdge(troll,recover,()=>{});
+    assert.equal(troll.edges,before-1,"An AI-selected boss action consumes one Edge");
+    assert.ok(!troll.conditions.includes("Persistent Damage"),"AI Edge Recover removes Persistent Damage through the rules engine");
+  `);
+
+  runEngineTest(`
+    state.mode="full";
+    state.tweaks=defaultTweaks();
+    state.screen="tweaks";
+    tweakView();
+    assert.ok(app.innerHTML.includes("ChatGPT API Control"),"The tweak screen renders API configuration");
+    assert.ok(app.innerHTML.includes("Inexperienced Player"),"The tweak screen renders all PC AI behaviors");
+    assert.ok(app.innerHTML.includes("Dramatic GM"),"The tweak screen renders all NPC AI behaviors");
+    assert.ok(app.innerHTML.includes("Enable Boss Edges"),"The API controls coexist with troll Boss Edge tweaking");
+    state.tweaks.pcs.ardan.control="ai";
+    startEncounter("bandits");
+    assert.equal(state.screen,"tweaks","An AI-configured encounter cannot begin without an API key");
+    assert.ok(modalRoot.innerHTML.includes("API key required"),"The missing-key problem is explained before combat");
+  `);
+
+  await runAsyncEngineTest(`
+    commit=()=>{};
+    save=()=>{};
+    localStorage.setItem(AI_KEY_STORAGE,"test-secret-key");
+    state.tweaks=defaultTweaks();
+    startEncounter("bandits");
+    let ardan=state.battle.pcs.find(p=>p.id==="ardan"); ardan.control="ai";
+    await runAITurn(ardan);
+    assert.ok(document.querySelector("#aiNext").onclick,"An AI decision waits behind a Next button");
+    document.querySelector("#aiNext").onclick();
+    assert.ok(ardan.acted,"Pressing Next executes the validated end-turn choice");
+    assert.equal(ardan.ap,ardan.maxAp,"The AI may legally retain AP by ending its turn");
+  `,async(url,request)=>{let body=JSON.parse(request.body),end=body.text.format.schema.properties.choice_id.enum.find(x=>x==="end");return{ok:true,status:200,json:async()=>({output_text:JSON.stringify({choice_id:end,reasoning:"Retain AP for reactions."}),usage:{input_tokens:8,output_tokens:4,total_tokens:12}})}});
+
+  console.log("combat-engine tests passed");
+})().catch(error=>{console.error(error);process.exitCode=1});
