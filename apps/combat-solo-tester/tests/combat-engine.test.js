@@ -519,6 +519,30 @@ runEngineTest(`
     assert.equal(ardan.ap,ardan.maxAp,"The AI may legally retain AP by ending its turn");
   `,async(url,request)=>{let body=JSON.parse(request.body),prompt=JSON.parse(body.input[1].content),end=prompt.legal_choices.find(x=>x.label==="End turn");return{ok:true,status:200,json:async()=>({output_text:JSON.stringify({choice_id:end.choice_id,reasoning:"Retain AP for reactions."}),usage:{input_tokens:8,output_tokens:4,total_tokens:12}})}});
 
+  let incapacitatedCalls=0;
+  await runAsyncEngineTest(`
+    commit=()=>{};
+    save=()=>{};
+    localStorage.setItem(AI_KEY_STORAGE,"test-secret-key");
+    state.tweaks=defaultTweaks();
+    startEncounter("bandits");
+    let ardan=state.battle.pcs.find(p=>p.id==="ardan");
+    ardan.control="ai"; ardan.zone=2; ardan.hp=105; ardan.ap=1; ardan.conditions=["Incapacitated"];
+    state.battle.selected=ardan.id;
+    await runAITurn(ardan);
+    assert.ok(document.querySelector("#aiNext").onclick,"An Incapacitated AI PC still reaches the decision dialog");
+    document.querySelector("#aiNext").onclick();
+    assert.ok(!ardan.conditions.includes("Incapacitated"),"The selected AI segment Recovers from Incapacitated");
+    assert.equal(ardan.ap,0,"AI Recover spends the Incapacitated PC's only AP");
+    assert.ok(ardan.acted,"The recovery segment ends the AI PC's turn cleanly");
+  `,async(url,request)=>{
+    incapacitatedCalls++;
+    let body=JSON.parse(request.body),prompt=JSON.parse(body.input[1].content),choice=prompt.legal_choices.find(x=>x.label.includes("Recover Incapacitated from Ardan")&&x.label.includes("End turn"));
+    assert.ok(choice,"The AI receives a legal Recover then End turn segment while Incapacitated");
+    return{ok:true,status:200,json:async()=>({output_text:JSON.stringify({choice_id:choice.choice_id,reasoning:"Recover, then end the turn."}),usage:{input_tokens:8,output_tokens:4,total_tokens:12}})};
+  });
+  assert.equal(incapacitatedCalls,1,"Enumerating an Incapacitated PC turn makes exactly one API request");
+
   let pcSegmentCalls=0;
   await runAsyncEngineTest(`
     commit=()=>{};
