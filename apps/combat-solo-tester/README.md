@@ -1,5 +1,7 @@
 # Combat Rules V0 — Solo Test Rig
 
+Developer and agent documentation is in [SPEC.md](SPEC.md).
+
 Open `index.html` in a modern desktop browser. No server, installation, or build step is required. Manual and deterministic play work offline. ChatGPT API control requires internet access and an OpenAI API key.
 
 The app autosaves the active test, completed encounter records, and survey answers to that browser's local storage. **Restart test** permanently clears that local record. There is deliberately no undo.
