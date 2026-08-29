@@ -66,6 +66,54 @@ runEngineTest(`
 runEngineTest(`
   commit=()=>{};
   save=()=>{};
+  state.mode="bandits";
+  state.screen="tweaks";
+  state.tweaks=defaultTweaks();
+  let draft=defaultPlacement("bandits");
+  assert.equal(draft.pcs.ardan,ENCOUNTERS.bandits.start,"New placement drafts use the published PC start zone");
+  assert.equal(draft.enemies.archer1,4,"New placement drafts use each enemy's published zone");
+  assert.ok(movePlacementUnit(draft,"pcs","ardan",4,"bandits"),"An individual PC can move to any encounter zone");
+  assert.ok(movePlacementUnit(draft,"enemies","melee1",0,"bandits"),"An individual enemy can move to any encounter zone");
+  assert.ok(applyPlacement("bandits",draft),"A complete valid placement can be applied");
+  assert.equal(state.tweaks.placements.bandits.pcs.ardan,4,"Applied PC placement is persisted in setup state");
+  assert.equal(state.tweaks.placements.bandits.enemies.melee1,0,"Applied enemy placement is persisted in setup state");
+  assert.equal(state.tweaks.placements.bandits.counts.melee,4,"Applying placement snapshots the locked archetype counts");
+  tweakView();
+  assert.ok(app.innerHTML.includes("Enemy counts are locked until placement is reset."),"The tweak screen explains the count lock");
+  assert.ok(app.innerHTML.includes('disabled aria-disabled="true"'),"Applied placement disables enemy count fields");
+  let cancelledDraft=deep(state.tweaks.placements.bandits);
+  movePlacementUnit(cancelledDraft,"pcs","ardan",1,"bandits");
+  renderPlacementModal("bandits",cancelledDraft);
+  document.querySelector("#cancelPlacement").onclick();
+  assert.equal(state.tweaks.placements.bandits.pcs.ardan,4,"Cancel leaves the previously applied placement unchanged");
+  assert.equal(modalRoot.innerHTML,"","Cancel closes the placement modal");
+  startEncounter("bandits");
+  assert.equal(state.battle.pcs.find(p=>p.id==="ardan").zone,4,"Combat starts the PC in the applied zone");
+  assert.equal(state.battle.enemies.find(e=>e.id==="melee1").zone,0,"Combat starts the enemy in the applied zone");
+  state.screen="tweaks";
+  resetPlacement("bandits",false);
+  assert.equal(state.tweaks.placements.bandits,null,"Reset Placement discards the placement snapshot");
+  tweakView();
+  assert.ok(!app.innerHTML.includes('aria-disabled="true"'),"Reset Placement unlocks enemy count fields");
+  let reapplied=defaultPlacement("bandits");
+  movePlacementUnit(reapplied,"pcs","mira",3,"bandits");
+  applyPlacement("bandits",reapplied);
+  tweakView();
+  document.querySelector("#resetTweaks").onclick();
+  assert.equal(state.tweaks.placements.bandits,null,"Reset published values also clears placement");
+  assert.equal(state.tweaks.bandits.melee.count,4,"Reset published values restores enemy counts");
+`);
+
+runEngineTest(`
+  state.screen="setup";
+  setupView();
+  assert.ok(!app.innerHTML.includes("Full Session"),"The removed multi-encounter mode is absent from setup");
+  assert.equal((app.innerHTML.match(/data-mode=/g)||[]).length,2,"Setup offers only the two independent encounters");
+`);
+
+runEngineTest(`
+  commit=()=>{};
+  save=()=>{};
   reactionPrompt=(e,target,name,atk,multi=false,condition=null,done=()=>{})=>resolveEnemyHit(e,target,name,atk,{id:"none"},multi,condition,done);
   state.tweaks=defaultTweaks();
   state.tweaks.troll.troll.count=2;
@@ -272,7 +320,7 @@ runEngineTest(`
   commit=()=>{};
   save=()=>{};
   for(const doctrine of ["allout","prepared","survivor"]){
-    state={screen:"setup",mode:null,queue:[],results:[],survey:{},battle:null,tweaks:defaultTweaks()};
+    state={screen:"setup",mode:null,results:[],survey:{},battle:null,tweaks:defaultTweaks()};
     for(const p of Object.values(state.tweaks.pcs))p.control=doctrine;
     startEncounter("bandits");
     let summaries=0;
@@ -437,7 +485,7 @@ runEngineTest(`
   `);
 
   runEngineTest(`
-    state.mode="full";
+    state.mode="troll";
     state.tweaks=defaultTweaks();
     state.screen="tweaks";
     tweakView();
@@ -445,6 +493,8 @@ runEngineTest(`
     assert.ok(app.innerHTML.includes("Inexperienced Player"),"The tweak screen renders all PC AI behaviors");
     assert.ok(app.innerHTML.includes("Dramatic GM"),"The tweak screen renders all NPC AI behaviors");
     assert.ok(app.innerHTML.includes("Enable Boss Edges"),"The API controls coexist with troll Boss Edge tweaking");
+    state.mode="bandits";
+    tweakView();
     state.tweaks.pcs.ardan.control="ai";
     startEncounter("bandits");
     assert.equal(state.screen,"tweaks","An AI-configured encounter cannot begin without an API key");

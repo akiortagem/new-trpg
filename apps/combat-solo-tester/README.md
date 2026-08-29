@@ -10,6 +10,8 @@ After choosing a test mode, the pre-encounter tweaking screen can directly overr
 
 The screen can also override every enemy archetype's count, HP, AP, ATK, DEF, Dodge, Threat, and defense-spending policy. These overrides deliberately ignore character-building and encounter-building rules.
 
+**Place Units** opens the pre-encounter placement dialog. Drag individual PCs and enemies into any zone, or select a unit and then select its destination zone. Changes remain drafts until **Apply Placement** is pressed; **Cancel** leaves the previously applied setup unchanged. Applying a placement locks enemy count fields because the saved positions refer to concrete unit instances. **Reset Placement** discards those positions and unlocks the counts. **Reset published values** resets both stats and placement.
+
 ## ChatGPT API control
 
 Each PC can independently use one of five model behaviors: Inexperienced Player, Reckless Hero, Self-Preserving, Role-Faithful, or Optimal Tactician. Each enemy archetype can independently use Optimal Killer, Self-Preserving, or Dramatic GM. AI actors know the battlefield but pursue their own priorities rather than sharing one side-wide plan.
@@ -30,7 +32,6 @@ After each doctrine-controlled PC finishes a turn, the app pauses on a dialog li
 
 - **Bandit Camp** runs only the group encounter, followed by metrics and the player survey.
 - **The Troll** runs only the boss encounter, including the investigation clue, followed by metrics and the player survey.
-- **Full Session** runs Bandit Camp, resets all characters and supplies, then runs The Troll. The survey appears after both encounters.
 
 ## Programmed GM rulings
 
@@ -40,4 +41,4 @@ The app reveals qualitative difficulty before commitments, but not exact enemy s
 
 ## Tests
 
-If Node.js is installed, run `node tests/combat-engine.test.js` from this folder. The tests exercise the deterministic combat engine plus mocked API retries, structured legal-choice validation, credential exclusion, information disclosure, behavior configuration, action dialogs, and AI telemetry. They never call the live API or consume tokens.
+If Node.js is installed, run `node tests/combat-engine.test.js` from this folder. The tests exercise placement application and reset, the deterministic combat engine, mocked API retries, structured legal-choice validation, credential exclusion, information disclosure, behavior configuration, action dialogs, and AI telemetry. They never call the live API or consume tokens.
