@@ -132,6 +132,30 @@ test("long connections create transit that forbids ordinary actions and can be a
   Core.abandonTransit(run,"hero");assert.equal(hero.transit,null);assert.equal(hero.zone,"field");
 });
 
+test("attack range counts zone links rather than Move costs",()=>{
+  const value=adventure("fight"),fight=value.scenes.fight;fight.battlefield.zones.push({id:"far",name:"Far Side"});fight.battlefield.links=[{from:"field",to:"far",cost:5}];fight.enemies[0].zone="far";const main=character();main.abilities[0].maxRange=1;
+  const run=Core.createRun(main,value,()=>0.5),hero=run.combat.pcs.find(x=>x.id==="hero"),foe=run.combat.enemies[0];
+  assert.ok(Core.legalAbilityTargets(run.combat,hero,hero.abilities[0]).includes(foe));
+});
+
+test("a PC turn cannot be interleaved with another PC's turn",()=>{
+  const run=Core.createRun(character(),adventure("fight"),()=>0.5);Core.beginPcTurn(run,"hero");
+  assert.throws(()=>Core.beginPcTurn(run,"ally"),/must finish their turn/);assert.equal(run.combat.selectedPcId,"hero");
+  Core.endPcTurn(run,"hero");assert.doesNotThrow(()=>Core.beginPcTurn(run,"ally"));
+});
+
+test("prepared multi-target abilities recheck and enforce every target requirement",()=>{
+  const main=character();main.abilities=[{id:"sweep",name:"Sweep",kind:"multi",ap:1,stamina:0,mana:0,power:20,minRange:0,maxRange:0,minTargets:2,maxTargets:2,attackBonus:0}];const value=adventure("fight");value.scenes.fight.enemies=[enemy(),enemy({id:"foe-2",name:"Second Foe"})];
+  const run=Core.createRun(main,value,()=>0.5),combat=run.combat,hero=combat.pcs.find(x=>x.id==="hero");Core.prepare(run,"hero","sweep","enemy-attacks-ally");Core.endPcTurn(run,"hero");Core.endPcTurn(run,"ally");
+  assert.equal(combat.pending.type,"prepared");assert.throws(()=>Core.resolvePrepared(run,true,["foe"]),/Choose 2–2 legal targets/);assert.equal(combat.pending.type,"prepared");
+  Core.resolvePrepared(run,true,["foe","foe-2"],()=>0.5);assert.equal(combat.enemies[0].hp,185);assert.equal(combat.enemies[1].hp,185);assert.deepEqual(combat.log.find(x=>x.type==="prepared.triggered").data.targetIds,["foe","foe-2"]);
+});
+
+test("Critical Recovery lets a PC downed by turn-start damage resume with retained AP",()=>{
+  const run=Core.createRun(character(),adventure("fight"),()=>0),combat=run.combat,hero=combat.pcs.find(x=>x.id==="hero");hero.hp=10;hero.ap=2;hero.conditions.push({id:"Persistent Damage",amount:10});Core.beginPcTurn(run,"hero");
+  assert.equal(hero.hp,0);assert.equal(hero.acted,true);Core.useCritical(run,"recovery","hero");assert.equal(hero.hp,50);assert.equal(hero.ap,2);assert.equal(hero.acted,false);assert.equal(combat.selectedPcId,"hero");
+});
+
 test("Persistent Damage is applied at the start of a PC's normal turn",()=>{
   const run=Core.createRun(character(),adventure("fight"),()=>0.5),hero=run.combat.pcs.find(x=>x.id==="hero");hero.conditions.push({id:"Persistent Damage",amount:12,expression:"Burning"});
   Core.beginPcTurn(run,"hero");assert.equal(hero.hp,88);Core.beginPcTurn(run,"hero");assert.equal(hero.hp,88,"selecting the same active PC again does not repeat turn-start damage");
