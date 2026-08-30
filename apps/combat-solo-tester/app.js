@@ -1,18 +1,18 @@
 "use strict";
-const SAVE_KEY="combat-v0-solo-test-v8";
+const SAVE_KEY="combat-v0-solo-test-v9";
 const $=s=>document.querySelector(s), app=$("#app"), modalRoot=$("#modalRoot");
 const deep=x=>JSON.parse(JSON.stringify(x));
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const roll=()=>Math.floor(Math.random()*100)+1;
 
 const PC_TEMPLATES=[
- {id:"ardan",name:"Ardan",role:"Polearm Mercenary",hp:250,stamina:20,mana:0,def:10,defenseBonus:40,abilities:[
+ {id:"ardan",name:"Ardan",role:"Polearm Mercenary",hp:250,stamina:20,mana:0,def:20,defenseBonus:40,abilities:[
   A("strike","Polearm Strike",1,0,0,55,0,0,"attack",45),A("thrust","Impaling Thrust",2,3,0,75,0,0,"attack",45),A("sweep","Sweeping Arc",2,4,0,45,0,0,"multi",0,2,3),A("rush","Lancer's Rush",1,3,0,55,0,0,"rush",45),A("lacerate","Lacerating Strike",2,3,0,55,0,0,"bleed",45)]},
- {id:"sera",name:"Sera",role:"Sword-and-Shield Guardian",hp:275,stamina:20,mana:0,def:20,defenseBonus:40,abilities:[
+ {id:"sera",name:"Sera",role:"Sword-and-Shield Guardian",hp:275,stamina:20,mana:0,def:36,defenseBonus:39,abilities:[
   A("strike","Sword Strike",1,0,0,35,0,0,"attack",30),A("bash","Shield Bash",1,3,0,45,0,0,"push",45)]},
- {id:"mira",name:"Mira",role:"Storm Mage",hp:250,stamina:15,mana:20,def:5,defenseBonus:20,abilities:[
+ {id:"mira",name:"Mira",role:"Storm Mage",hp:250,stamina:15,mana:20,def:12,defenseBonus:20,abilities:[
   A("touch","Storm Touch",1,0,2,60,0,0,"attack",45),A("bolt","Lightning Bolt",1,0,2,60,0,1,"attack",45),A("gust","Gust",1,0,3,60,0,1,"push",45)]},
- {id:"elian",name:"Elian",role:"Holy Mage",hp:250,stamina:15,mana:20,def:5,defenseBonus:20,abilities:[
+ {id:"elian",name:"Elian",role:"Holy Mage",hp:250,stamina:15,mana:20,def:12,defenseBonus:20,abilities:[
   A("touch","Holy Touch",1,0,2,55,0,0,"attack",45),A("bolt","Radiant Bolt",1,0,2,55,0,1,"attack",45),A("mend","Mend",1,0,3,50,0,1,"heal",0),A("wave","Renewing Wave",2,0,5,40,0,1,"multiheal",0,2,3)]}
 ];
 function A(id,name,ap,stamina,mana,power,minRange,maxRange,type,attackBonus,minTargets=1,maxTargets=1){return{id,name,ap,stamina,mana,power,minRange,maxRange,type,attackBonus,minTargets,maxTargets}}

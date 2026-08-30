@@ -27,11 +27,25 @@ When enemies successfully ambush the party, the enemies take the first phase of 
 
 An ambush changes who acts first. It does not give the ambushing side free attacks, extra turns, or automatic damage unless the circumstances provide a separate effect.
 
+### Critical Rounds
+
+At the beginning of combat, one player rolls a d6. The result is the first **Critical Round**. A result of 1 makes the first round Critical, a result of 2 makes the second round Critical, and so on.
+
+During a Critical Round, the party may spend its one Critical on behalf of any PC. The party chooses one of the following benefits:
+
+- **Critical Attack.** When a PC attacks, choose that character's DEX, AGI, STR, or INT. The attack's Critical ATK is **C-ATK = ATK + (chosen attribute × 2)**. The attack cannot be Defended against. A multi-target attack applies its full C-ATK to every target.
+- **Invincibility Frame.** Choose one PC at the beginning of the round or when that PC is subjected to a hostile effect. For the remainder of the round, that PC is immune to every hostile effect, including attacks, damage, and conditions. If declared in response to an effect, it prevents that effect.
+- **Critical Recovery.** Choose one PC. Restore HP equal to half that character's maximum HP, without exceeding the maximum, and remove every condition affecting that character. This can return a PC at 0 HP to combat but does not restore AP.
+
+The opportunity expires if the party does not spend it before the end of its Critical Round. Whether the party spends it or lets it expire, one player then rolls another d6. Add the result to the current round number to determine the next Critical Round. Only PCs receive Critical benefits.
+
 ## Action Points
 
 Action Points measure the time and attention available to a combatant during a round. Moving, attacking, helping an ally, and defending oneself all draw from the same supply.
 
 This creates the central decision of combat: AP spent during your turn cannot be spent protecting yourself later in the round.
+
+Defend is an escape hatch, not an action every character is expected to use routinely. A character may reasonably commit every AP to offense when the battlefield favors it. Retaining AP preserves a defensive option when the visible danger makes that sacrifice worthwhile.
 
 > **Example: Holding the Line**  
 > Sera has 3 AP. She spends 1 AP to Strike and ends her turn with 2 AP. During the enemy phase, she may Defend twice, Protect an ally and then Defend, or use another combination of reactions she knows. If she had made three Strikes, she would have no AP left to react.
@@ -173,9 +187,9 @@ A mundane held implement may contribute an applicable skill: Swordsmanship with 
 | 96–00 | Full enemy ATK |
 
 > **Example: Defending Against a Bandit**  
-> Sera is attacked for 35 ATK. She has AGI 10, DEX 10, Shieldcraft +15, a shield with 5 Implement DEF, and total DEF 20. The bandit has Threat 30. Her target number is 30 + 10 + 10 + 15 + 5 = 70.  
+> Sera is attacked for 35 ATK. She has AGI 10, DEX 10, Shieldcraft +15, a shield with 4 Implement DEF, and total DEF 36. The bandit has Threat 30. Her target number is 30 + 10 + 10 + 15 + 4 = 69.
 >  
-> On 01–05, she avoids all damage. On 06–70, she takes 15 damage after DEF. On 71–00, she takes the full 35 damage. If she does not spend 1 AP to Defend, she takes 35 damage without rolling.
+> On 01–05, she avoids all damage. On 06–69, her DEF reduces the damage to 0. On 70–00, she takes the full 35 damage. If she does not spend 1 AP to Defend, she takes 35 damage without rolling.
 
 Lower Dodge and Threat values represent more dangerous opposition. Standard members of the same enemy type normally share these values.
 
@@ -378,15 +392,17 @@ Changing a held item uses Interact for 1 AP. Dropping an item is free. A charact
 
 Medium armor requires STR 8. Heavy armor requires STR 15.
 
+Against ordinary attacks in a medium non-boss encounter, representative light, medium, and heavily protected PCs should reduce approximately 30%, 50%, and 90% of an attack on a successful Defend. These percentages are design benchmarks only. Damage always uses the flat DEF values supplied by the character's actual equipment and abilities.
+
 ### Equipment List
 
 | Item | Rules |
 |---|---|
 | Two-handed polearm | +10 Weapon ATK; Range 0; Physical; Strike uses STR + DEX + Polearms; occupies both hands |
 | One-handed sword | +5 Weapon ATK; Range 0; Physical; Strike uses DEX + AGI + Swordsmanship |
-| Shield | +5 Implement DEF; uses Shieldcraft when held; one hand |
-| Light clothing | 5 DEF |
-| Medium armor | 10 DEF; requires STR 8 |
-| Heavy armor | 15 DEF; requires STR 15; Heavy |
+| Shield | +4 Implement DEF; uses Shieldcraft when held; one hand |
+| Light clothing | 12 DEF |
+| Medium armor | 20 DEF; requires STR 8 |
+| Heavy armor | 32 DEF; requires STR 15; Heavy |
 | Storm implement | One hand; +5 ATK to Touch, Lightning Bolt, and compatible Storm Magic attacks |
 | Holy implement | One hand; +5 healing to compatible Holy Magic abilities |

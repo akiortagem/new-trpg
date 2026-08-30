@@ -46,6 +46,14 @@ When an enemy attacks you, you may spend 1 AP to Defend. When you attack an enem
 
 One Inventory Point and 1 AP restore either 50 HP, 5 stamina, or 6 mana.
 
+At the beginning of combat, roll a d6 to determine the first Critical Round. During that round, the party may spend one Critical for any PC:
+
+- **Critical Attack:** `C-ATK = ATK + (DEX, AGI, STR, or INT × 2)`. Choose the attribute. The attack cannot be Defended and may be multi-target.
+- **Invincibility Frame:** Declare at the beginning of the round or when the chosen PC faces a hostile effect. That PC is immune to all hostile effects, including attacks, damage, and conditions, for the rest of the round.
+- **Critical Recovery:** One PC restores HP equal to half maximum HP and removes all conditions. This may revive a PC but does not restore AP.
+
+The Critical expires at the end of the round. Whether it was spent or not, roll another d6 and add the result to the current round number to schedule the next Critical Round. Enemies do not receive Criticals.
+
 ## Ardan, Polearm Mercenary
 
 Ardan combines strong basic attacks with stamina-powered bursts, sweeping attacks, and rapid advances.
@@ -60,7 +68,7 @@ Ardan combines strong basic attacks with stamina-powered bursts, sweeping attack
 | Stamina | 20 | 20 |
 | Inventory Points | 3 | 3 |
 | AP | 3 | 3 |
-| DEF | 10 | 10 |
+| DEF | 20 | 20 |
 
 **Polearm Strike — 1 AP:** Range 0, one target, 55 Physical ATK. If the target Defends, roll against its Dodge + STR 15 + DEX 15 + Polearms 15.
 
@@ -88,7 +96,7 @@ Sera can attack with sword or shield, rescue nearby allies, and turn a successfu
 | Stamina | 20 | 20 |
 | Inventory Points | 3 | 3 |
 | AP | 3 | 3 |
-| DEF | 20 | 20 |
+| DEF | 36 | 36 |
 
 **Sword Strike — 1 AP:** Range 0, one target, 35 Physical ATK. If the target Defends, roll against its Dodge + DEX 10 + AGI 10 + Swordsmanship 10.
 
@@ -98,7 +106,7 @@ Sera can attack with sword or shield, rescue nearby allies, and turn a successfu
 
 **Shield Bash — 1 AP, 3 stamina:** Range 0, one target, 45 Physical ATK. If the target Defends, roll against its Dodge + STR 15 + END 15 + Shieldcraft 15. If the attack deals damage, push the target into one connected zone.
 
-**Defend:** Roll against enemy Threat + AGI 10 + DEX 10 + Shieldcraft 15 + shield Implement DEF 5.
+**Defend:** Roll against enemy Threat + AGI 10 + DEX 10 + Shieldcraft 15 + shield Implement DEF 4.
 
 ## Mira, Storm Mage
 
@@ -115,7 +123,7 @@ Mira attacks at range, throws enemies out of position, and can preserve AP and m
 | Mana | 20 | 20 |
 | Inventory Points | 3 | 3 |
 | AP | 3 | 3 |
-| DEF | 5 | 5 |
+| DEF | 12 | 12 |
 
 **Storm Touch — 1 AP, 2 mana:** Range 0, one target, 60 Magical ATK. If the target Defends, roll against its Dodge + MND 15 + INT 15 + Storm Magic 15.
 
@@ -142,7 +150,7 @@ Elian divides mana between magical attacks, concentrated healing, and efficient 
 | Mana | 20 | 20 |
 | Inventory Points | 3 | 3 |
 | AP | 3 | 3 |
-| DEF | 5 | 5 |
+| DEF | 12 | 12 |
 
 **Holy Touch — 1 AP, 2 mana:** Range 0, one target, 55 Magical ATK. If the target Defends, roll against its Dodge + MND 15 + INT 15 + Holy Magic 15.
 
@@ -339,6 +347,8 @@ On the normal turn, use Sweeping Blow against two or more targets; otherwise use
 | Finishing blows / interceptions |  |
 | All-offense turns |  |
 | Repeated actions |  |
+| Critical Rounds reached / Criticals spent |  |
+| Critical benefits chosen |  |
 | Rules consultations |  |
 
 ### Ability and Resource Record

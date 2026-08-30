@@ -104,6 +104,21 @@ Checked sections are sufficiently decided to support the next interview stage. T
 - NPC ambush: Enemies take the first phase of round one; PC-first order resumes in round two.
 - PC ambush: Hypothesis—PCs receive +1 AP. Not committed.
 
+### Critical Rounds
+
+- Status: Testing
+- At the beginning of combat, one player rolls a d6. The result identifies the first Critical Round.
+- The party receives one Critical during that round and may spend it for any PC.
+- The opportunity expires at the end of the Critical Round.
+- Whether spent or expired, roll another d6 and add it to the current round number to schedule the next Critical Round.
+- Criticals are player-facing; NPCs do not receive them.
+
+Critical benefits:
+
+1. **Critical Attack:** Choose DEX, AGI, STR, or INT. `C-ATK = ATK + (chosen attribute × 2)`. It cannot be Defended and applies its full C-ATK to every target of a multi-target attack.
+2. **Invincibility Frame:** Declare for one PC at the beginning of the round or in response to a hostile effect. The PC is immune to every hostile effect, including attacks, damage, and conditions, for the remainder of the round.
+3. **Critical Recovery:** One PC restores half maximum HP and removes every condition. It can revive a PC but grants no AP.
+
 ### Questions still to answer
 
 - Does an ambushed side refresh AP normally before the first phase?
@@ -120,6 +135,7 @@ Checked sections are sufficiently decided to support the next interview stage. T
 - A spontaneous reaction must be labelled as a reaction ability.
 - Reactions before one's own turn are allowed and reduce AP available on that turn.
 - Repeated reactions are allowed while AP and prerequisites permit.
+- Defend is accepted as an escape hatch rather than a routine action for most builds. All-out offense may be correct when the battlefield supports it; the rule preserves an emergency option for characters who retain AP.
 
 ### Prepared actions
 
@@ -593,10 +609,10 @@ Universal Defend uses:
 
 | Character | Attack item | Weapon ATK | Range | Armor | Implement | Total DEF | Property |
 |---|---|---:|---:|---|---|---:|---|
-| Offensive martial | Two-handed polearm | 10 | 0 | Medium armor, DEF 10 | Polearm, Implement DEF 0 | 10 | Polearm Strike uses STR + DEX |
-| Defensive martial | One-handed sword | 5 | 0 | Heavy armor, DEF 15 | Shield, Implement DEF 5 | 20 | Sword Strike uses DEX + AGI; prototype shield enables Shield Bash |
-| Magic offense/control | Touch / purchased Bolt | General magic +10; storm implement +5 to compatible attacks | 0 / 0–1 | Light clothing, DEF 5 | Storm implement | 5 | Implement is one-handed but never required to cast |
-| Support | Touch / purchased Bolt | General magic +10; no attack bonus from holy implement | 0 / 0–1 | Light clothing, DEF 5 | Holy implement, +5 to compatible healing | 5 | Implement is one-handed but never required to cast |
+| Offensive martial | Two-handed polearm | 10 | 0 | Medium armor, DEF 20 | Polearm, Implement DEF 0 | 20 | Polearm Strike uses STR + DEX |
+| Defensive martial | One-handed sword | 5 | 0 | Heavy armor, DEF 32 | Shield, Implement DEF 4 | 36 | Sword Strike uses DEX + AGI; prototype shield enables Shield Bash |
+| Magic offense/control | Touch / purchased Bolt | General magic +10; storm implement +5 to compatible attacks | 0 / 0–1 | Light clothing, DEF 12 | Storm implement | 12 | Implement is one-handed but never required to cast |
+| Support | Touch / purchased Bolt | General magic +10; no attack bonus from holy implement | 0 / 0–1 | Light clothing, DEF 12 | Holy implement, +5 to compatible healing | 12 | Implement is one-handed but never required to cast |
 
 ### Basic attack formulas
 
@@ -609,7 +625,7 @@ Universal Defend uses:
 
 ### Questions remaining for testing or later catalogue work
 
-- Are the +5/+10 weapon bonuses and 5/10/15 armor scale balanced?
+- Do total DEF values land near the 30% / 50% / 90% mitigation benchmarks against ordinary attacks in medium non-boss encounters?
 - Does a 20-item inventory remain manageable in full play?
 - Which additional items explicitly contribute to several functions?
 
@@ -626,8 +642,8 @@ These are test configurations, not classes. At least two must share a generic ab
 - Attributes: STR 15, END 15, VIT 10, MND 5, AGI 10, DEX 15, INT 5.
 - Skills: Polearms — Skilled (+15).
 - HP / stamina / mana / IP: 250 / 20 / none / 3.
-- AP / DEF: 3 / 10.
-- Equipment: Two-handed polearm (+10 ATK), medium armor (10 DEF).
+- AP / DEF: 3 / 20.
+- Equipment: Two-handed polearm (+10 ATK), medium armor (20 DEF).
 - Universal-ability formulas: Polearm Strike is 55 ATK; defended target is 80% against Dodge 35. Defend contribution is AGI 10 + DEX 15 + Polearms 15 + Implement DEF 0.
 - Purchased abilities: Impaling Thrust, Sweeping Arc, Lancer's Rush, Lacerating Strike.
 - Shared generic ability and fictionalization: Area Attack becomes Sweeping Arc.
@@ -643,10 +659,10 @@ These are test configurations, not classes. At least two must share a generic ab
 - Attributes: STR 15, END 15, VIT 15, MND 5, AGI 10, DEX 10, INT 5.
 - Skills: Swordsmanship — Trained (+10); Shieldcraft — Skilled (+15).
 - HP / stamina / mana / IP: 275 / 20 / none / 3.
-- AP / DEF: 3 / 20.
-- Equipment: One-handed sword (+5 ATK), shield (5 Implement DEF), heavy armor (15 DEF, STR 15, Heavy).
+- AP / DEF: 3 / 36.
+- Equipment: One-handed sword (+5 ATK), shield (4 Implement DEF), heavy armor (32 DEF, STR 15, Heavy).
 - Purchased abilities: Shielded Intercession, Riposte, Shield Bash.
-- Protect/Defend specialization: Shielded Intercession compresses Protect and Defend into one reaction. Shield Defend contributes AGI 10 + DEX 10 + Shieldcraft 15 + Implement DEF 5, for 70% against Threat 30.
+- Protect/Defend specialization: Shielded Intercession compresses Protect and Defend into one reaction. Shield Defend contributes AGI 10 + DEX 10 + Shieldcraft 15 + Implement DEF 4, for 69% against Threat 30.
 - Shared generic ability and fictionalization: Forced Move becomes Shield Bash; the Storm Mage expresses the same generic ability as Gust.
 - Strongest expected turn: Retain enough AP for Shielded Intercession and Riposte, or repeat Shield Bash while stamina permits.
 - Unlimited fallback: Sword Strike at 35 ATK; 65% against Dodge 35.
@@ -659,8 +675,8 @@ These are test configurations, not classes. At least two must share a generic ab
 - Attributes: STR 5, END 10, VIT 10, MND 15, AGI 10, DEX 10, INT 15.
 - Skills: Storm Magic — Skilled (+15).
 - HP / stamina / mana / IP: 250 / 15 / 20 / 3.
-- AP / DEF: 3 / 5.
-- Equipment: Storm implement, +5 ATK specifically to Touch, Bolt, and compatible Storm Magic attacks; light clothing, 5 DEF.
+- AP / DEF: 3 / 12.
+- Equipment: Storm implement, +5 ATK specifically to Touch, Bolt, and compatible Storm Magic attacks; light clothing, 12 DEF.
 - Basic magical attack decision: Touch is granted by Storm Magic and costs 2 mana; Lightning Bolt is purchased for superior Range 0–1 targeting.
 - Purchased abilities: Lightning Bolt, Galeshield, Gust.
 - Conditions introduced: None; Gust resolves forced movement immediately.
@@ -676,8 +692,8 @@ These are test configurations, not classes. At least two must share a generic ab
 - Attributes: STR 5, END 10, VIT 10, MND 15, AGI 10, DEX 10, INT 15.
 - Skills: Holy Magic — Skilled (+15).
 - HP / stamina / mana / IP: 250 / 15 / 20 / 3.
-- AP / DEF: 3 / 5.
-- Equipment: Holy implement, +5 specifically to compatible healing; light clothing, 5 DEF.
+- AP / DEF: 3 / 12.
+- Equipment: Holy implement, +5 specifically to compatible healing; light clothing, 12 DEF.
 - Healing/support abilities: Mend restores 50 HP; Renewing Wave restores 40 HP each to two or three targets.
 - Shared generic ability and fictionalization: Bolt becomes Radiant Bolt. Bolt is shared with Storm Magic through a different anchored skill and expression.
 - Strongest expected turn: Radiant Bolt plus Mend, or Renewing Wave while retaining 1 AP.
@@ -1037,7 +1053,10 @@ NPCs use the same AP-and-ability structure as PCs but simplified type-based stat
 | 2026-08-25 | Ability-skill combinations use curated qualifying lists and share generic mechanical chassis. | Provisional | Creates broad expression without authoring the full cross-product. | Most combinations demand bespoke rulings or become unpredictable. |
 | 2026-08-25 | Universal Defend uses AGI + DEX + applicable mundane implement skill + Implement DEF; magical defense requires a purchased Ward expression. | Provisional | Anything may be used practically to defend, while magical defense remains an invested, mana-powered technique. | Defense options become mandatory or conceptually incoherent. |
 | 2026-08-25 | Conventional weapons grant Strike; prototype magical skills grant 2-mana Touch, while purchased Bolt is deliberately superior in range. | Provisional | Separates free martial fallback from resource-powered magical offense. | Mage exhaustion is unfun or Bolt becomes mandatory. |
-| 2026-08-25 | Prototype equipment uses +5 increments, STR-gated armor, 20 ordinary item slots, and Heavy capacity equal to STR. | Testing | Provides a simple first equipment scale and meaningful strength gates. | Equipment tests or inventory handling fail. |
+| 2026-08-30 | Prototype armor and defensive implements use flat DEF without a required increment. Representative light, medium, and heavily protected PCs target roughly 30%, 50%, and 90% mitigation against ordinary attacks in medium non-boss encounters. Current test values are light 12, medium 20, heavy 32, and shield Implement DEF 4. | Testing | Existing DEF values made successful defense too weak; percentage benchmarks guide flat values without turning mitigation into percentage arithmetic. | New defense values trivialize ordinary attacks or remain irrelevant. |
+| 2026-08-30 | Defend remains a 1-AP reaction and is accepted as an uncommon escape hatch for most builds rather than a routine action. | Provisional | Playtests showed all-out offense is often the winning line; stronger mitigation preserves emergency value without forcing defense into every turn. | Defend is never chosen even when it would prevent defeat, or defensive builds lose their identity. |
+| 2026-08-30 | Repeated ranged attacks from an established safe position remain legal and require no universal anti-spam rule. | Provisional | Repetition appeared monotonous in AI logs but is the intended payoff for securing a safe firing position. | Human players report boredom or ranged offense erases positioning and other options. |
+| 2026-08-30 | Player-only Critical Rounds are scheduled by d6 countdowns. Each opportunity expires that round and may become Critical Attack, Invincibility Frame, or Critical Recovery. | Testing | Adds an infrequent exciting random moment without routine attack rolls and gives the party a shared timing decision. | Critical setup dominates combat, the benefits are unequal, or the cadence is too frequent or too sparse. |
 | 2026-08-25 | Prototype IP capacity is 3; one IP and AP restore 50 HP, 5 stamina, or 6 mana; IP resets between prototype encounters. | Testing | Creates emergency recovery choices with fixed values. | Recovery dominates or is ignored. |
 | 2026-08-25 | Each initial pregen had three purchased abilities; the offensive martial later gained Lacerating Strike for the condition test. Exhausted mages intentionally have no attack fallback. | Testing | Keeps interfaces compact while covering required mechanics and making mana exhaustion consequential. | The fourth martial ability overloads that sheet or mages become non-participants too readily. |
 | 2026-08-26 | Conditions have no countdown. Recover costs 1 AP and removes one condition; an ally may help when the method is plausible or made possible with 1 IP. | Provisional | Makes harmful conditions an AP tax without duration bookkeeping. | Recovery becomes trivial or too punitive. |

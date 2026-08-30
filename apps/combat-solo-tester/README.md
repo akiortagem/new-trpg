@@ -10,6 +10,8 @@ After choosing a test mode, the pre-encounter tweaking screen can directly overr
 
 The screen can also override every enemy archetype's count, HP, AP, ATK, DEF, Dodge, Threat, and defense-spending policy. These overrides deliberately ignore character-building and encounter-building rules.
 
+The default PC DEF values reflect the current combat documents. The newly added Critical Round subsystem is not yet implemented in the test rig; run it manually until its controls and automated-player behavior are specified.
+
 **Place Units** opens the pre-encounter placement dialog. Drag individual PCs and enemies into any zone, or select a unit and then select its destination zone. Changes remain drafts until **Apply Placement** is pressed; **Cancel** leaves the previously applied setup unchanged. Applying a placement locks enemy count fields because the saved positions refer to concrete unit instances. **Reset Placement** discards those positions and unlocks the counts. **Reset published values** resets both stats and placement.
 
 ## ChatGPT API control

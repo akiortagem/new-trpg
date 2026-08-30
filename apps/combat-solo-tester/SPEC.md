@@ -14,6 +14,8 @@ The tweak screen may deliberately create configurations that are not legal under
 
 The app is not a general virtual tabletop, character builder, campaign manager, or authoritative replacement for the written rules. Where the written rules leave a decision to the GM, the app uses the published deterministic doctrine or the selected AI behavior.
 
+The written rules' Critical Round subsystem is a known implementation gap. The current app incorporates the revised default DEF values but does not schedule, spend, or record Criticals. Do not silently approximate Critical behavior inside an existing action path; add it through an explicit interaction and automation design.
+
 ## 2. Runtime constraints
 
 - The app must continue to work by opening `index.html` directly through `file://`.
