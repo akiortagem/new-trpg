@@ -18,11 +18,11 @@ Status values: `Unknown`, `Hypothesis`, `Testing`, `Provisional`, `Locked`.
 - [x] Establish investigation and information handling.
 - [x] Establish preparation under quest deadlines.
 - [x] Establish journey and aftermath principles.
+- [x] Draft player-facing out-of-combat rules.
 - [ ] Test target numbers against representative starting characters.
 - [ ] Test clocks of two, four, and six segments.
 - [ ] Test preparation choices under a quest deadline.
 - [ ] Test one investigation, one journey hazard, and one social challenge.
-- [ ] Draft player-facing out-of-combat rules after testing.
 
 ## 1. Design purpose
 
