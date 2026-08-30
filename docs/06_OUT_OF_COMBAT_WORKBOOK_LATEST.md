@@ -84,7 +84,7 @@ The die produces a binary result: success or failure.
 - **Success:** The declared goal is achieved.
 - **Failure:** The declared goal is not achieved. The GM applies a consequence that changes the situation and moves play forward.
 
-A failed roll resolves the attempted uncertainty. The same approach cannot be repeated under unchanged circumstances until somebody eventually rolls well. A later attempt is possible only if the situation or approach has genuinely changed.
+A failed roll resolves the attempted uncertainty. The same approach cannot be attempted again until the situation or approach has genuinely changed.
 
 Failure may cost time, consume or lose a resource, inflict harm, reveal the party, close an option, separate characters, permit an NPC to succeed, or produce another consequence appropriate to the fiction. A consequence does not create an immediate roll whose only purpose is to cancel that consequence.
 
