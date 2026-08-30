@@ -287,6 +287,11 @@ function distance(combat,from,to){
   while(queue.length){queue.sort((a,b)=>a[1]-b[1]);const [zone,cost]=queue.shift();if(zone===to)return cost;for(const edge of adjacent(combat,zone)){const next=cost+edge.cost;if(next<(best.get(edge.zone)??Infinity)){best.set(edge.zone,next);queue.push([edge.zone,next])}}}
   return Infinity;
 }
+function rangeDistance(combat,from,to){
+  if(from===to)return 0;const queue=[[from,0]],seen=new Set([from]);
+  while(queue.length){const [zone,links]=queue.shift();for(const edge of adjacent(combat,zone)){if(seen.has(edge.zone))continue;if(edge.zone===to)return links+1;seen.add(edge.zone);queue.push([edge.zone,links+1])}}
+  return Infinity;
+}
 function conditionsHas(unit,id){return unit.conditions.some(x=>(typeof x==="string"?x:x.id)===id)}
 function addCondition(unit,condition){if(!condition||conditionsHas(unit,condition.id||condition))return;unit.conditions.push(typeof condition==="string"?{id:condition}:clone(condition));if((condition.id||condition)==="Incapacitated")unit.ap=Math.min(unit.ap,1)}
 function removeCondition(unit,id){unit.conditions=unit.conditions.filter(x=>(typeof x==="string"?x:x.id)!==id)}
@@ -297,7 +302,7 @@ function targetablePcs(combat){return consciousPcs(combat).filter(x=>!x.transit)
 function abilityCost(ability){return{ap:ability.ap||0,stamina:ability.stamina||0,mana:ability.mana||0}}
 function canPay(unit,ability){const cost=abilityCost(ability);return unit.ap>=cost.ap&&unit.stamina>=cost.stamina&&unit.mana>=cost.mana}
 function pay(unit,ability){const cost=abilityCost(ability);unit.ap-=cost.ap;unit.stamina-=cost.stamina;unit.mana-=cost.mana}
-function inRange(combat,actor,target,ability){const value=distance(combat,actor.zone,target.zone);return value>=(ability.minRange||0)&&value<=(ability.maxRange||0)}
+function inRange(combat,actor,target,ability){const value=rangeDistance(combat,actor.zone,target.zone);return value>=(ability.minRange||0)&&value<=(ability.maxRange||0)}
 function legalAbilityTargets(combat,actor,ability){
   const candidates=ability.kind==="heal"||ability.kind==="multiheal"?combat.pcs.filter(x=>x.hp< x.maxHp):ability.kind==="rally"?combat.pcs.filter(x=>x.hp>0&&!conditionsHas(x,"Rallied")):targetableEnemies(combat);
   return candidates.filter(target=>!target.transit&&inRange(combat,actor,target,ability));
@@ -375,6 +380,7 @@ function abandonTransit(run,pcId){
 }
 function beginPcTurn(run,pcId,random=Math.random){
   const combat=run.combat,pc=byId(combat.pcs,pcId);if(!pc||combat.phase!=="pc"||pc.acted||pc.hp<=0)throw new Error("That PC cannot begin a turn now.");
+  if(combat.selectedPcId&&combat.selectedPcId!==pc.id)throw new Error("The active PC must finish their turn before another begins.");
   if(pc.turnStarted){combat.selectedPcId=pc.id;return}
   pc.turnStarted=true;combat.selectedPcId=pc.id;
   for(const condition of pc.conditions.filter(x=>(x.id||x)==="Persistent Damage")){const damage=condition.amount||0;if(damage){pc.hp=Math.max(0,pc.hp-damage);combatLog(run,"condition.damage",`${pc.name} takes ${damage} Persistent Damage.`,{pcId:pc.id,damage})}}
@@ -432,7 +438,7 @@ function useCritical(run,kind,pcId,attribute=null){
     if(!["dex","agi","str","int"].includes(attribute))throw new Error("Choose DEX, AGI, STR, or INT.");combat.criticalArmed={pcId,attribute};combatLog(run,"critical.armed",`${pc.name} prepares a Critical Attack using ${attribute.toUpperCase()}.`,{pcId,attribute});return;
   }
   combat.criticalUsed=true;combat.metrics.criticalUses++;
-  if(kind==="recovery"){pc.hp=Math.min(pc.maxHp,pc.hp+Math.ceil(pc.maxHp/2));pc.conditions=[];combatLog(run,"critical.recovery",`${pc.name} receives Critical Recovery.`,{pcId})}
+  if(kind==="recovery"){const wasDown=pc.hp===0;pc.hp=Math.min(pc.maxHp,pc.hp+Math.ceil(pc.maxHp/2));pc.conditions=[];if(wasDown&&pc.hp>0&&combat.phase==="pc"){pc.acted=false;if(!combat.selectedPcId)combat.selectedPcId=pc.id}combatLog(run,"critical.recovery",`${pc.name} receives Critical Recovery.`,{pcId})}
   else if(kind==="invincibility"){pc.invincible=true;combatLog(run,"critical.invincibility",`${pc.name} gains an Invincibility Frame for this round.`,{pcId})}
   else throw new Error("Unknown Critical benefit.");
 }
@@ -473,10 +479,16 @@ function resolveReaction(run,optionId,random=Math.random){
 function preparedCandidate(combat,enemy,trigger,target=null){
   return combat.pcs.find(pc=>pc.hp>0&&pc.prepared?.trigger===trigger&&pc.ap>0&&(!target||pc.id!==target.id)&&(trigger!=="enemy-attacks-ally"||pc.zone===target.zone)&&byId(pc.abilities,pc.prepared.abilityId)&&inRange(combat,pc,enemy,byId(pc.abilities,pc.prepared.abilityId))&&canPay(pc,byId(pc.abilities,pc.prepared.abilityId)));
 }
-function resolvePrepared(run,use,random=Math.random){
+function resolvePrepared(run,use,targetIds=null,random=Math.random){
+  if(typeof targetIds==="function"){random=targetIds;targetIds=null}
   const combat=run.combat,pending=combat.pending;if(!pending||pending.type!=="prepared")throw new Error("No prepared action is waiting.");
   const pc=byId(combat.pcs,pending.pcId),enemy=byId(combat.enemies,pending.enemyId),ability=byId(pc.abilities,pending.abilityId);combat.pending=null;
-  if(use&&enemy.alive){pc.prepared=null;pay(pc,ability);metricUse(combat,pc,ability);applyPcAttack(run,pc,ability,[enemy],{},random);combatLog(run,"prepared.triggered",`${pc.name}'s prepared ${ability.name} triggers against ${enemy.name}.`,{pcId:pc.id,enemyId:enemy.id,abilityId:ability.id})}
+  if(use&&enemy.alive){
+    const ids=targetIds||[enemy.id],targets=ids.map(id=>byId(combat.enemies,id)).filter(target=>target?.alive);
+    const min=ability.minTargets||1,max=ability.maxTargets||1;
+    if(!targets.includes(enemy)||new Set(ids).size!==ids.length||targets.length<min||targets.length>max||targets.some(target=>!inRange(combat,pc,target,ability))){combat.pending=pending;throw new Error(`Choose ${min}–${max} legal targets, including the enemy that triggered the preparation.`)}
+    pc.prepared=null;pay(pc,ability);metricUse(combat,pc,ability);applyPcAttack(run,pc,ability,targets,{},random);combatLog(run,"prepared.triggered",`${pc.name}'s prepared ${ability.name} triggers against ${targets.map(target=>target.name).join(", ")}.`,{pcId:pc.id,enemyId:enemy.id,targetIds:targets.map(target=>target.id),abilityId:ability.id})
+  }
   else combatLog(run,"prepared.skipped",`${pc.name} does not use the prepared ${ability.name}.`,{pcId:pc.id,abilityId:ability.id});
   checkCombatEnd(run,random);if(!run.combat)return;
   if(combat.queued?.kind==="attack"){const queued=combat.queued;if(!enemy.alive){combat.queued=null;continueEnemyPhase(run,random);return}combat.pending={type:"reaction",sourceId:enemy.id,targetId:queued.targetId,attack:queued.attack};}
