@@ -62,10 +62,10 @@ Write the loop as 4–7 verbs:
 | Step | Information available | Player decision | Pressure/resource | Rule or procedure | Output into next step |
 |---|---|---|---|---|---|
 | Re-enter characters and receive briefing | The quest has been agreed by GM and players before the session; the client supplies the immediate problem, known constraints, payment, and deadline. | Establish what the characters are doing and ask questions needed to commit to the job. | Approximately 20 minutes total for free roleplay and briefing. | Session-opening and quest-briefing procedure, still to be designed. | A shared objective, stakes, deadline, and immediate preparation questions. |
-| Prepare under deadline | Available shops, witnesses, leads, known monster information, expected route, remaining days, and party capabilities. | Choose what to buy, what to investigate, which expertise to apply, and when enough preparation is enough. | Money, quest deadline, and opportunity cost of additional preparation. | Preparation, investigation, shopping, and elapsed-time procedures, still to be designed. Different expertise reveals different actionable facts. | Equipment, spent time and money, monster data, a route, and the party's remaining margin before the deadline. |
-| Journey through complications | Route information, environmental conditions, known hazards, remaining time, abilities, and supplies. | Confront a hazard directly, spend an ability or resource, accept risk, or take a safer but slower route; propose relevant character knowledge that could create another option. | Time, limited abilities/resources, harm or lost equipment, and the quest deadline. | Travel-hazard and resolution procedures, still to be designed. | Changed resources and time, possible consequences, additional information, and the circumstances in which the party reaches the fight. |
+| Prepare under deadline | Available shops, witnesses, leads, known monster information, expected route, remaining days, and party capabilities. | Choose what to buy, what to investigate, which expertise to apply, and when enough preparation is enough. | Money, quest deadline, and opportunity cost of additional preparation. | General checks or progress clocks where uncertainty matters; time costs are disclosed before commitment, and party members may prepare in parallel when practical. | Equipment, spent time and money, monster data, a route, and the party's remaining margin before the deadline. |
+| Journey through complications | Route information, environmental conditions, known hazards, remaining time, abilities, and supplies. | Confront a hazard directly, use an ability or item, accept risk, or take a safer but slower route. | Time, supplies, harm or lost equipment, and the quest deadline. | Ordinary travel is narrated; meaningful hazards use one suitable PC's general check or a progress clock when several distinct actions are required. | Changed resources and time, possible consequences, additional information, and the circumstances in which the party reaches the fight. |
 | Fight | Known common-monster traits; boss information gathered through tracking, martial expertise, lore, observation, or other methods; environment; allies; available abilities and resources. | Compose flexible action-point turns, choose abilities and targets, protect allies, respond to hazards, and exploit useful monster facts. | Action economy, limited abilities/resources, ally safety, environmental hazards, monster mechanics, and lethality when players are inattentive. | Theatre-of-the-mind-first AP combat, translatable to a grid; exact rules remain to be designed. | Victory, defeat, harm, spent resources, recovered loot, and consequences for the quest story. |
-| Resolve and return | Battle outcome, client needs, recovered loot, elapsed time, and story consequences. | Decide how to handle the aftermath, report the result, claim rewards, and respond to any immediate consequence. | Deadline compliance, client judgment, and consequences created by the quest. | Quest-aftermath and reward procedure, still to be designed. | Payment, equipment/loot, story changes, reputation or relationships when relevant, and new purchasing options. |
+| Resolve and return | Battle outcome, client needs, recovered loot, elapsed time, and story consequences. | Decide how to handle the aftermath, report the result, claim rewards, and respond to any immediate consequence. | Deadline compliance, client judgment, and consequences created by the quest. | Completion, payment, and loot follow what the party accomplished and the established terms. The game recommends playing the return but allows the GM to compress it. | Payment, equipment/loot, story changes, reputation or relationships when relevant, and new purchasing options. |
 | Equip and improve | Money, loot, existing equipment, and available purchases or progression. | Buy new equipment, improve existing equipment, replenish consumable supply, and make character-progression choices. | Money and opportunity costs among competing purchases. | Equipment purchasing, improvement, and classless progression procedures, still to be designed. | A changed character and inventory ready for the next self-contained quest. |
 
 ### Timescale check
@@ -107,40 +107,47 @@ Write the loop as 4–7 verbs:
 - Ordinary mental influence pressures a player's decision through incentives and penalties. It does not transfer control of the character to the GM.
 - Routine preparedness should be abstracted so that capable adventurers are not punished merely because their players forgot to recite an obvious packing list.
 
-## 5. Resolution hypothesis
+## 5. Resolution procedure
 
-- Trigger for using the mechanic: The GM calls for a roll only when the outcome is uncertain, more than one outcome would be meaningful, and the result will materially change play. Every roll must matter.
-- Inputs: A numeric skill rating, an inherent property of the character, the GM-set difficulty, relevant equipment or items, and any limited resources the player commits before rolling.
-- Randomizer or resource: Unknown. Current candidates are d6-based resolution, because d6s are readily available, and a single percentile roll, because explicit percentages may be enjoyable. Players commit and consume resources before rolling to improve their chance against a known difficulty.
-- Possible outcomes: Success; success with a twist; fail forward.
-- Who interprets the result: The GM, constrained by the declared goal, established fiction, and the outcome definitions.
-- Typical character vs typical challenge probabilities: Unknown pending selection and testing of the dice model.
-- Ways a player alters odds or effect: Higher skill, the relevant inherent character property, suitable equipment or items, help or other situational advantages where applicable, and limited resources committed before the roll. General-purpose rescue of a bad result after rolling is not currently intended.
-- Cost of attempting: Any resources committed to the roll are consumed regardless of the result. Fictional consequences may impose additional costs on a twist or failure.
-- Rule for repeated attempts: A roll resolves the declared uncertainty completely. Failure is final for that attempted goal and cannot be repaired by immediately trying again. Its consequence changes the situation.
-- What happens if no roll is required: The GM grants automatic success when the action is credible and nothing meaningful is at risk, or explains that the action is impossible when the established fiction does not permit it.
+- Trigger for using the mechanic: The GM calls for a roll only when the action is possible, its outcome is genuinely uncertain, success and failure would both matter, and resolving it will materially change play.
+- Randomizer: Players roll d100 at or below a target number. The GM rolls only when consulting a random table.
+- Target number: `Attribute + Attribute + (one Skill Rank × 5) + GM Modifier + all relevant situational modifiers`.
+- Attributes and skill: Player and GM discuss the two attributes and zero or one relevant skill supported by the described approach. The same attribute may be used twice when it genuinely fits. The GM has final authority.
+- Difficulty: The GM chooses any modifier that fits. `+0`, `−20`, `−40`, and `−60` are reference values rather than named tiers or mandatory increments. The modifier or final TN is communicated before commitment.
+- Automatic results: If competent action makes success assured, the character succeeds without rolling. If the final TN is 0 or lower or the approach cannot work, no roll occurs.
+- Possible die results: Success or failure. The rules define no general critical-success or critical-failure ranges.
+- Situational benefits: Relevant distinctive item and ability modifiers stack. Routine tools and professional preparation are assumed and do not grant bonuses merely because the player narrates them.
+- Repeated attempts: A roll resolves the declared uncertainty completely. Failure changes the situation, so the same approach cannot be repeated under unchanged circumstances.
+- Full procedure and first-pass test questions: See `06_OUT_OF_COMBAT_WORKBOOK_LATEST.md`.
 
 ### Resolution principles
 
 - The GM must communicate difficulty clearly enough for players to understand what they are risking before they commit resources. Whether this uses exact numbers, probabilities, or descriptive categories depends on the eventual dice mechanic.
-- **Success with a twist is still complete success.** The original goal is achieved without requiring another roll to finish it. The twist creates a cost, complication, or changed circumstance around that success without diminishing it.
-- **Fail forward is final failure with movement.** The original goal is not achieved, cannot be immediately retried, and produces an unavoidable consequence that advances the situation.
+- **Success with a twist is negotiated after failure.** Either side may propose that the failed result becomes complete success with an agreed complication. Failure remains the result unless the table agrees.
+- **Fail forward is final failure with movement.** The original goal is not achieved, cannot be immediately retried, and produces a consequence that advances the situation.
 - A consequence does not prompt an immediate roll to prevent or cancel that consequence. Later rolls are permitted when characters act within the genuinely new situation it created.
+
+### Multiple-character tasks
+
+- One suitable PC acts when one character's action can resolve the task. There is no Help or Assist action.
+- A task becomes a two-, four-, or six-segment progress clock only when it genuinely requires several distinct actions. The party may propose a clock when the fiction supports it.
+- A successful contribution fills one segment. A natural `01–05` fills two segments as a clock-specific rule. Failure uses normal fail forward or negotiated success with a twist and does not erase progress by default.
+- No rotation or participation quota requires every PC to contribute.
 
 ### Outcome matrix
 
 | Outcome | Probability | Fictional result | Mechanical result | Creates next decision? |
 |---|---:|---|---|---|
-| Success | Unknown | The declared goal is achieved fully and cleanly. | Committed resources are consumed; no additional consequence from the roll. | Yes, through the achieved goal and resulting fictional position. |
-| Success with a twist | Unknown | The declared goal is achieved fully, but the GM introduces a cost, complication, or changed circumstance that does not taint the original success or require another roll to complete it. | Committed resources are consumed and the twist takes effect without an immediate prevention roll. | Yes, through the changed situation created around the success. |
-| Fail forward | Unknown | The declared goal fails definitively. An unavoidable consequence changes the situation, and the same attempt cannot be repeated to repair it. | Committed resources are consumed and the consequence takes effect without an immediate prevention roll. | Yes, by forcing the party to address the new situation rather than reroll the failed task. |
+| Success | `d100 ≤ TN` | The declared goal is achieved. | Any committed costs are consumed. | Yes, through the achieved goal and resulting fictional position. |
+| Failure | `d100 > TN` | The declared goal is not achieved. A consequence changes the situation, and the same approach cannot be repeated unchanged. | Any committed costs are consumed and the consequence takes effect without an immediate prevention roll. | Yes, by forcing the party to address the new situation. |
+| Negotiated success with a twist | Table agreement after failure | The declared goal succeeds with an agreed cost, complication, or changed circumstance. | The agreed twist takes effect without an immediate prevention roll. | Yes, through the changed situation around the success. |
 
 ## 6. Character architecture
 
 - Minimum character information: Attributes, ratings from a fixed universal skill list, combat abilities, HP, and relevant equipment. A combat AP value or pool is likely but remains Unknown pending combat design.
 - Primary axes of differentiation: How Character Points are divided among attributes, skills, and abilities; which skills anchor purchased abilities; how each ability is named and fictionalized; and which equipment enables or modifies those abilities.
-- What every character can do: Outside combat, any credible mundane action may be attempted using two attributes agreed upon by the player and GM, plus one relevant skill when applicable. Inside combat, every mechanically actionable option is represented by an ability. All characters automatically receive a basic universal set of combat abilities, whose exact contents remain Unknown.
-- What requires special permission: Non-basic combat actions require the corresponding purchased ability. Each purchased ability has openly stated alternative skill requirements. Magic requires an appropriate skill to qualify for an ability and cannot be attempted merely through attributes.
+- What every character can do: Outside combat, any credible mundane action may be attempted using two attributes agreed upon by the player and GM, plus zero or one relevant skill. Characters with magical skills may attempt freeform magic outside combat. Inside combat, every mechanically actionable option is represented by an ability.
+- What requires special permission: Non-basic combat actions require the corresponding purchased ability. Each purchased ability has openly stated alternative skill requirements. Freeform magic cannot be used during combat.
 - How characters support or complicate one another: The common ability catalogue includes abilities that act on or assist allies. Players create support capabilities by purchasing and fictionalizing those abilities; party roles are not assigned. Multiple characters may freely overlap in skills or abilities.
 - How quickly a new player can create a character: Approximately 15 minutes once the player has a character concept.
 
@@ -247,7 +254,7 @@ Check only what the core experience requires:
 
 ### Scope notes
 
-- Social actions use the normal challenge rules. A general contested-challenge procedure may be added to the core resolution system, but there is no separate social-conflict subsystem.
+- Social actions use the normal challenge rules. Opposition is accounted for in the GM-set modifier, and NPC-initiated uncertainty is resolved by the appropriate player's roll; there is no separate social-conflict or opposed-roll subsystem.
 - Inspirational event tables may be provided for GMs without requiring random encounter rolls.
 - The game provides no native world, faction system, or universal world-reaction procedure. The GM creates the world and determines its reactions.
 - Solo rules are outside the promised game, even if solo play is used during design testing.
@@ -352,3 +359,7 @@ Check only what the core experience requires:
 | 2026-08-24 | Character Points may be saved and freely spent between sessions on attributes, skills, and abilities, including entirely new options and multiple ranks at once. | Provisional | Keeps advancement flexible and avoids training procedures or fictional-access bookkeeping. | Large between-session power jumps destabilize challenges or create fiction that the group finds implausible. |
 | 2026-08-24 | Advancement costs do not increase with rating; purchases are permanent by default, with respec available only at GM discretion. | Provisional | Keeps costs legible and avoids escalating advancement arithmetic while allowing campaigns to accommodate rebuilds if desired. | Flat costs make high specialization overwhelmingly efficient or respec policy causes table disputes. |
 | 2026-08-24 | Party parity for replacement and newly joining characters, advancement-related burdens, and campaign end-states are determined by the GM or remain undecided. | Provisional | These choices depend heavily on campaign structure and do not require a universal core answer yet. | Campaign and endgame procedures are designed. |
+| 2026-08-30 | Outside-combat uncertainty uses a player-rolled d100 against two attributes, zero or one skill at five points per rank, a GM-set modifier, and stacking situational modifiers. | Provisional | Establishes one legible general check while retaining approach-based attribute choices and GM authority over difficulty. | Representative characters and challenges are tested. |
+| 2026-08-30 | One suitable PC resolves a task unless it genuinely requires several distinct actions, in which case it uses a two-, four-, or six-segment progress clock; the game has no Help or Assist action. | Provisional | Prevents passive bonus fishing while allowing multiple PCs to contribute when their actions are actually necessary. | Playtesting shows exclusion problems or arbitrary clock use. |
+| 2026-08-30 | Combat abilities retain useful defined effects outside combat, while freeform magic is costless outside combat, unavailable during combat, and checked only when non-trivial. | Provisional | Connects character abilities and magical expertise to exploration without bypassing the purchased combat-action interface. | Freeform magic eclipses mundane approaches or purchased abilities. |
+| 2026-08-30 | Investigation cannot block information required to continue; failure instead makes the party proceed ineffectively. Preparation and journey consequences operate through openly communicated quest days and fiction-specific costs. | Provisional | Preserves forward motion while keeping preparation, information, and time consequential. | Investigation feels automatic or deadlines fail to create decisions. |
