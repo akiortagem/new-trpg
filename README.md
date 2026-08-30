@@ -27,3 +27,4 @@ The app autosaves active tests in browser local storage. Its pre-encounter scree
 - `docs/COMBAT_RULES_V0.md` — player-facing combat rules.
 - `docs/COMBAT_PLAYTEST_PACKET_V0.md` — encounters, pregenerated characters, procedures, and survey.
 - `docs/05_COMBAT_PROTOTYPE_WORKBOOK_LATEST.md` — active combat-design workbook and decision record.
+- `docs/06_OUT_OF_COMBAT_WORKBOOK_LATEST.md` — first-pass out-of-combat procedures, decisions, and test questions.
