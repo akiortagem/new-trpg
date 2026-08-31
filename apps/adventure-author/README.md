@@ -19,4 +19,12 @@ Validation never blocks saving. Runtime-invalid issues are Errors; design concer
 
 The game is still designed around one substantial combat in an adventure, but the runtime accepts multiple combat nodes for authors who deliberately need them.
 
+## Tests
+
+The authoring model and text-game compatibility layer have dependency-free Node regression tests. From the repository root, run:
+
+```sh
+node --test apps/adventure-author/tests/*.test.js
+```
+
 See [`SPEC.md`](SPEC.md) for the implementation contract and authoring decisions.
