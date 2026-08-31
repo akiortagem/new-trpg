@@ -66,6 +66,19 @@ test("runtime validation rejects nonnumeric add effects",()=>{
   assert.throws(()=>Core.createRun(character(),value,()=>0.5),/add effects require a finite numeric value/);
 });
 
+test("runtime validation rejects unsafe or unsupported state effect paths",()=>{
+  const value=Model.createAdventureDraft("bad-path","Bad Path",1);
+  value.scenes.start.choices[0].outcome.effects=[{type:"set",path:"bogus.value",value:true}];
+  let errors=Core.validateAdventure(value);
+  assert.ok(errors.some(error=>error.includes("unsafe or unsupported state effect path bogus.value")));
+  assert.throws(()=>Core.createRun(character(),value,()=>0.5),/unsafe or unsupported state effect path bogus\.value/);
+
+  value.scenes.start.choices[0].outcome.effects=[{type:"add",path:"flags.__proto__.count",value:1}];
+  errors=Core.validateAdventure(value);
+  assert.ok(errors.some(error=>error.includes("unsafe or unsupported state effect path flags.__proto__.count")));
+  assert.throws(()=>Core.createRun(character(),value,()=>0.5),/unsafe or unsupported state effect path flags\.__proto__\.count/);
+});
+
 test("move-unit interactions resolve the $main alias to the selected main character",()=>{
   const value=Model.createAdventureDraft("move-main","Move Main",1);
   value.scenes.start.choices[0].outcome={text:"Fight",next:"fight"};
