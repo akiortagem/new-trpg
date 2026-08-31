@@ -17,8 +17,26 @@
     return value;
   }
 
+  function validateClockEffectReferences(adventure) {
+    const valid = new Set(Object.keys(adventure?.clocks || {}));
+    const issues = [];
+    function walk(value, path = "adventure.scenes") {
+      if (!value || typeof value !== "object") return;
+      if (!Array.isArray(value) && value.type === "advance-clock" && !valid.has(value.id)) {
+        issues.push(`${path}.id: unknown progress clock ${value.id || "(missing)"}`);
+      }
+      if (Array.isArray(value)) value.forEach((item, index) => walk(item, `${path}[${index}]`));
+      else for (const [key, item] of Object.entries(value)) walk(item, `${path}.${key}`);
+    }
+    walk(adventure?.scenes || {});
+    return issues;
+  }
+
   function validateAdventureWithMultipleCombats(adventure) {
-    return validateAdventure(adventure).filter(issue => issue !== combatCountIssue);
+    return [
+      ...validateAdventure(adventure).filter(issue => issue !== combatCountIssue),
+      ...validateClockEffectReferences(adventure)
+    ];
   }
 
   function validationSafeAdventure(adventure) {
