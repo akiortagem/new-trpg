@@ -120,6 +120,35 @@ The top level has this shape:
 
 An adventure must contain exactly one scene with `type: "combat"`. It may contain any number of ordinary scenes and endings.
 
+## Main-character name placeholder
+
+Use `{{main.name}}` in displayed adventure text when the copy should name whichever main-character file the player selected. The app replaces the placeholder when a new run begins.
+
+```json
+{
+  "type": "scene",
+  "title": "A Contract for {{main.name}}",
+  "text": [
+    "The guildmaster pushes a sealed letter toward {{main.name}}.",
+    { "speaker": "{{main.name}}", "text": "What is inside?" }
+  ],
+  "choices": [
+    {
+      "id": "open-letter",
+      "label": "{{main.name}} opens the letter.",
+      "resolution": "automatic",
+      "reason": "Opening the letter requires no check.",
+      "outcome": {
+        "text": "{{main.name}} breaks the seal.",
+        "next": "briefing"
+      }
+    }
+  ]
+}
+```
+
+The placeholder works in presentation fields such as adventure and scene titles, narration, dialogue speakers and text, choice copy, check wording, outcome text, twist previews, ending copy, zone labels, and combat names. It is not substituted in structural rules fields such as `id`, `next`, `path`, actor references, zone references, skill names, or effect values. Continue to use `$main` where the schema expects the main character's id, such as `actor.id` and `pcStarts`.
+
 ## Ordinary scenes and passages
 
 An ordinary scene contains displayed passages and choices. A passage can be a plain string or attributed dialogue.
