@@ -11,6 +11,8 @@
   const templateTextKeys = new Set(["title","text","speaker","label","description","reason","goal","approach","name","role","expression","twistPreview"]);
   const writableRoots = new Set(["flags","counters","quest","clocks"]);
   const unsafePathSegments = new Set(["__proto__","constructor","prototype"]);
+  const outcomeEffectTypes = new Set(["set","add","advance-clock"]);
+  const interactionEffectTypes = new Set([...outcomeEffectTypes,"damage-enemy","condition-enemy","move-unit"]);
   const clone = value => JSON.parse(JSON.stringify(value));
 
   function materializeAdventure(value, mainName, key = null) {
@@ -32,31 +34,70 @@
     }
   }
 
-  function validateExtraEffectReferences(adventure) {
+  function validateEffect(effect, path, allowedTypes, validClocks, issues) {
+    if (!effect || typeof effect !== "object" || Array.isArray(effect)) {
+      issues.push(`${path}: effect must be an object`);
+      return;
+    }
+    if (!allowedTypes.has(effect.type)) {
+      const type = typeof effect.type === "string" && effect.type ? effect.type : "(missing)";
+      issues.push(`${path}.type: effect type ${type} is not allowed in this container`);
+      return;
+    }
+    validateStateEffectPath(effect, path, issues);
+    if (effect.type === "advance-clock" && !validClocks.has(effect.id)) {
+      issues.push(`${path}.id: unknown progress clock ${effect.id || "(missing)"}`);
+    }
+    if (effect.type === "add" && (typeof effect.value !== "number" || !Number.isFinite(effect.value))) {
+      issues.push(`${path}.value: add effects require a finite numeric value`);
+    }
+  }
+
+  function validateEffects(effects, path, allowedTypes, validClocks, issues) {
+    if (effects == null) return;
+    if (!Array.isArray(effects)) return;
+    effects.forEach((effect, index) => validateEffect(effect, `${path}[${index}]`, allowedTypes, validClocks, issues));
+  }
+
+  function validateOutcomeEffects(outcome, path, validClocks, issues) {
+    if (!outcome || typeof outcome !== "object" || Array.isArray(outcome)) return;
+    validateEffects(outcome.effects, `${path}.effects`, outcomeEffectTypes, validClocks, issues);
+  }
+
+  function validateExtraEffects(adventure) {
     const validClocks = new Set(Object.keys(adventure?.clocks || {}));
     const issues = [];
-    function walk(value, path = "adventure.scenes") {
-      if (!value || typeof value !== "object") return;
-      if (!Array.isArray(value)) {
-        validateStateEffectPath(value, path, issues);
-        if (value.type === "advance-clock" && !validClocks.has(value.id)) {
-          issues.push(`${path}.id: unknown progress clock ${value.id || "(missing)"}`);
-        }
-        if (value.type === "add" && (typeof value.value !== "number" || !Number.isFinite(value.value))) {
-          issues.push(`${path}.value: add effects require a finite numeric value`);
+    for (const [sceneId, scene] of Object.entries(adventure?.scenes || {})) {
+      const scenePath = `adventure.scenes.${sceneId}`;
+      if (!scene || typeof scene !== "object" || Array.isArray(scene)) continue;
+      if (scene.type === "scene") {
+        for (const [choiceIndex, choice] of (scene.choices || []).entries()) {
+          if (!choice || typeof choice !== "object" || Array.isArray(choice)) continue;
+          const choicePath = `${scenePath}.choices[${choiceIndex}]`;
+          if (choice.resolution === "automatic") validateOutcomeEffects(choice.outcome, `${choicePath}.outcome`, validClocks, issues);
+          if (choice.resolution === "check") {
+            validateOutcomeEffects(choice.success, `${choicePath}.success`, validClocks, issues);
+            validateOutcomeEffects(choice.failure, `${choicePath}.failure`, validClocks, issues);
+            validateOutcomeEffects(choice.twist, `${choicePath}.twist`, validClocks, issues);
+          }
         }
       }
-      if (Array.isArray(value)) value.forEach((item, index) => walk(item, `${path}[${index}]`));
-      else for (const [key, item] of Object.entries(value)) walk(item, `${path}.${key}`);
+      if (scene.type === "combat") {
+        validateOutcomeEffects(scene.victory, `${scenePath}.victory`, validClocks, issues);
+        validateOutcomeEffects(scene.defeat, `${scenePath}.defeat`, validClocks, issues);
+        for (const [interactionIndex, interaction] of (scene.interactions || []).entries()) {
+          if (!interaction || typeof interaction !== "object" || Array.isArray(interaction)) continue;
+          validateEffects(interaction.effects, `${scenePath}.interactions[${interactionIndex}].effects`, interactionEffectTypes, validClocks, issues);
+        }
+      }
     }
-    walk(adventure?.scenes || {});
     return issues;
   }
 
   function validateAdventureWithMultipleCombats(adventure) {
     return [
       ...validateAdventure(adventure).filter(issue => issue !== combatCountIssue),
-      ...validateExtraEffectReferences(adventure)
+      ...validateExtraEffects(adventure)
     ];
   }
 
