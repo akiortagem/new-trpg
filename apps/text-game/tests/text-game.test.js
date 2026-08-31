@@ -17,7 +17,7 @@ function combatScene(overrides={}){
 }
 function adventure(startScene="test",sceneOverrides={}){
   const ally=character("ally","Ally");
-  return{schemaVersion:1,kind:"adventure",id:"test-adventure",title:"Test Adventure",startScene,questDays:2,initialState:{flags:{warned:false},counters:{}},clocks:{search:{label:"Search",size:4}},party:[ally],scenes:{test:{type:"scene",title:"The Test",text:["Choose."],choices:[{id:"check",label:"Make the check",resolution:"check",actor:{mode:"select",eligible:["*"]},check:{goal:"Find the trail",approach:"Study the marks",attributes:["int","dex"],skill:"Awareness",gmModifier:0,situationalModifiers:[],clock:"search"},success:outcome("The trail is found.","fight"),failure:outcome("The trail goes cold.","lost"),twistPreview:"The trail is found, but danger is warned.",twist:{text:"The trail is found after a lookout escapes.",next:"fight",effects:[{type:"set",path:"flags.warned",value:true}]}}]},fight:combatScene(),won:{type:"ending",title:"Won",outcome:"victory",text:"Victory."},lost:{type:"ending",title:"Lost",outcome:"defeat",text:"Defeat."},...sceneOverrides}};
+  return{schemaVersion:1,kind:"adventure",id:"test-adventure",title:"Test Adventure",startScene,questDays:2,initialState:{flags:{warned:false},counters:{}},clocks:{search:{label:"Search",size:4}},party:[ally],scenes:{test:{type:"scene",title:"The Test",text:["Choose.",{speaker:"Ally",text:"I can read the trail."}],choices:[{id:"check",label:"Make the check",resolution:"check",actor:{mode:"select",eligible:["*"]},check:{goal:"Find the trail",approach:"Study the marks",baseTN:60,attributes:["int","dex"],skill:"Awareness",situationalModifiers:[],clock:"search"},success:outcome("The trail is found.","fight"),failure:outcome("The trail goes cold.","lost"),twistPreview:"The trail is found, but danger is warned.",twist:{text:"The trail is found after a lookout escapes.",next:"fight",effects:[{type:"set",path:"flags.warned",value:true}]}}]},fight:combatScene(),won:{type:"ending",title:"Won",outcome:"victory",text:"Victory."},lost:{type:"ending",title:"Lost",outcome:"defeat",text:"Defeat."},...sceneOverrides}};
 }
 
 test("character and adventure schemas accept a complete valid pair",()=>{
@@ -40,7 +40,7 @@ test("any valid main-character id replaces $main without adventure restrictions"
 test("checks reveal and use the RAW TN formula",()=>{
   const run=Core.createRun(character(),adventure()),choice=Core.visibleChoices(run)[0];
   const preview=Core.checkTotal(run,choice,"hero");
-  assert.equal(preview.tn,30,"INT 10 + DEX 10 + Awareness rank 2 × 5");
+  assert.equal(preview.tn,90,"Base 60 + INT 10 + DEX 10 + Awareness rank 2 × 5");
   const result=Core.resolveChoice(run,"check","hero",()=>0.09);
   assert.equal(result.result,"success");
   assert.equal(result.roll,10);
@@ -53,6 +53,15 @@ test("natural 01–05 fills two progress-clock segments",()=>{
   const run=Core.createRun(character(),value);Core.resolveChoice(run,"check","hero",()=>0);
   assert.equal(run.world.clocks.search.filled,2);
   assert.ok(run.log.some(x=>x.type==="clock.progress"&&x.data.segments===2));
+});
+
+test("checks require a Base TN from 25 to 60",()=>{
+  const missing=adventure();delete missing.scenes.test.choices[0].check.baseTN;assert.ok(Core.validateAdventure(missing).some(x=>x.includes("check.baseTN")));
+  const high=adventure();high.scenes.test.choices[0].check.baseTN=61;assert.ok(Core.validateAdventure(high).some(x=>x.includes("cannot exceed 60")));
+});
+
+test("scene narration and character dialogue enter the chronological story stream",()=>{
+  const run=Core.createRun(character(),adventure());assert.ok(run.log.some(x=>x.type==="story.narration"&&x.message==="Choose."));assert.ok(run.log.some(x=>x.type==="story.dialogue"&&x.data.speaker==="Ally"));
 });
 
 test("failed rolls wait for the player to accept or decline the authored twist",()=>{
@@ -186,4 +195,5 @@ test("static application exposes local files, three save slots, and log export",
   assert.match(source,/\[1,2,3\]/);
   assert.match(source,/new Blob\(\[JSON\.stringify\(payload,null,2\)\]/);
   assert.doesNotMatch(source,/fetch\s*\(/,"the app makes no network request");
+  assert.match(source,/storyStreamHtml/);assert.match(source,/story\.dialogue/);
 });
