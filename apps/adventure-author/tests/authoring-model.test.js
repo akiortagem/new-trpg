@@ -16,6 +16,13 @@ test("new adventure drafts start with a valid routable choice",()=>{
   assert.equal(value.scenes.start.choices[0].outcome.end,"victory");
 });
 
+test("wizard draft validation rejects missing required fields and negative days",()=>{
+  assert.deepEqual(Model.validateWizardDraftInput("adventure","Title",0),[]);
+  assert.ok(Model.validateWizardDraftInput("","Title",1).some(x=>/id is required/i.test(x)));
+  assert.ok(Model.validateWizardDraftInput("adventure","",1).some(x=>/title is required/i.test(x)));
+  assert.ok(Model.validateWizardDraftInput("adventure","Title",-1).some(x=>/0 or greater/i.test(x)));
+});
+
 test("choice renames reject duplicate sibling ids without mutating the scene",()=>{
   const scene={type:"scene",choices:[choice("first"),choice("second")]};
   const result=Model.renameChoiceId(scene,1,"First");
@@ -69,4 +76,16 @@ test("clock effect validation also catches stale battlefield interaction referen
   const issues=Model.clockEffectIssues(value);
   assert.equal(issues.length,1);
   assert.match(issues[0].message,/old-search/);
+});
+
+test("battlefield links can be corrected and removed through model helpers",()=>{
+  const scene={battlefield:{links:[{from:"road",to:"ridge",cost:1},{from:"ridge",to:"camp",cost:2}]}};
+  assert.equal(Model.updateBattlefieldLink(scene,0,{cost:3}).ok,true);
+  assert.equal(scene.battlefield.links[0].cost,3);
+  const invalid=Model.updateBattlefieldLink(scene,0,{cost:0});
+  assert.equal(invalid.ok,false);
+  assert.equal(scene.battlefield.links[0].cost,3);
+  const removed=Model.removeBattlefieldLink(scene,0);
+  assert.equal(removed.ok,true);
+  assert.deepEqual(scene.battlefield.links,[{from:"ridge",to:"camp",cost:2}]);
 });
