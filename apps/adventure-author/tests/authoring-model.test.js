@@ -62,7 +62,6 @@ test("advance-clock effects require an authored clock",()=>{
   const issues=Model.clockEffectIssues(value);
   assert.equal(issues.length,1);
   assert.match(issues[0].message,/unknown clock clock/i);
-
   value.clocks.search={label:"Search",size:4};
   value.scenes.start.choices[0].outcome.effects[0].id="search";
   assert.equal(Model.canUseAdvanceClock(value),true);
@@ -90,7 +89,7 @@ test("battlefield links can be corrected and removed through model helpers",()=>
   assert.deepEqual(scene.battlefield.links,[{from:"ridge",to:"camp",cost:2}]);
 });
 
-test("openable shape validation rejects containers that would crash structured rendering",()=>{
+test("openable shape validation rejects containers and nested entries that would crash structured rendering",()=>{
   const value=Model.createAdventureDraft("shape-test","Shape Test",1);
   assert.deepEqual(Model.openableShapeIssues(value),[]);
   value.party={};
@@ -98,6 +97,14 @@ test("openable shape validation rejects containers that would crash structured r
   value.party=[];
   value.scenes.start.choices={};
   assert.ok(Model.openableShapeIssues(value).some(x=>/choices must be an array/i.test(x)));
+  value.scenes.start.choices=[null];
+  assert.ok(Model.openableShapeIssues(value).some(x=>/choices\[0\] must be an object/i.test(x)));
+  value.scenes.start.choices=[choice("safe")];
+  value.scenes.start.text=[null];
+  assert.ok(Model.openableShapeIssues(value).some(x=>/text\[0\]/i.test(x)));
+  value.scenes.start.text=["Safe"];
+  value.clocks={search:null};
+  assert.ok(Model.openableShapeIssues(value).some(x=>/clocks\.search must be an object/i.test(x)));
 });
 
 test("add effects require finite numeric values",()=>{
@@ -106,6 +113,7 @@ test("add effects require finite numeric values",()=>{
   assert.equal(Model.numericAddEffectIssues(value).length,1);
   assert.deepEqual(Model.parseAddEffectValue("2"),{ok:true,value:2});
   assert.equal(Model.parseAddEffectValue("one").ok,false);
+  assert.equal(Model.parseAddEffectValue("").ok,false);
   value.scenes.start.choices[0].outcome.effects[0].value=2;
   assert.deepEqual(Model.numericAddEffectIssues(value),[]);
 });
