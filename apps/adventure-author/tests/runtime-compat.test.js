@@ -47,6 +47,18 @@ test("runtime validation rejects advance-clock outcomes that reference no author
   assert.throws(()=>Core.createRun(character(),value,()=>0.5),/unknown progress clock clock/);
 });
 
+test("runtime validation rejects nonnumeric advance-clock segment counts",()=>{
+  const value=Model.createAdventureDraft("bad-segments","Bad Segments",1);
+  value.clocks.search={label:"Search",size:4};
+  value.scenes.start.choices[0].outcome.effects=[{type:"advance-clock",id:"search",segments:"two"}];
+  let errors=Core.validateAdventure(value);
+  assert.ok(errors.some(error=>error.includes("advance-clock segments must be a finite numeric value")));
+  assert.throws(()=>Core.createRun(character(),value,()=>0.5),/advance-clock segments must be a finite numeric value/);
+  value.scenes.start.choices[0].outcome.effects[0].segments=2;
+  errors=Core.validateAdventure(value);
+  assert.deepEqual(errors,[]);
+});
+
 test("runtime validation rejects stale advance-clock interaction references",()=>{
   const value=Model.createAdventureDraft("interaction-clock","Interaction Clock",1);
   value.clocks.search={label:"Search",size:4};
