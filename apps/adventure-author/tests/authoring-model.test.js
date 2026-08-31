@@ -91,6 +91,16 @@ test("battlefield links can be corrected and removed through model helpers",()=>
   assert.deepEqual(scene.battlefield.links,[{from:"ridge",to:"camp",cost:2}]);
 });
 
+test("interaction placement can be moved only to an authored battlefield zone",()=>{
+  const scene={battlefield:{zones:[{id:"road"},{id:"camp"}]},interactions:[{id:"lever",zone:"road"}]};
+  const moved=Model.updateInteractionZone(scene,"lever","camp");
+  assert.equal(moved.ok,true);
+  assert.equal(scene.interactions[0].zone,"camp");
+  const invalid=Model.updateInteractionZone(scene,"lever","missing");
+  assert.equal(invalid.ok,false);
+  assert.equal(scene.interactions[0].zone,"camp");
+});
+
 test("openable shape validation rejects containers and nested entries that would crash structured rendering",()=>{
   const value=Model.createAdventureDraft("shape-test","Shape Test",1);
   assert.deepEqual(Model.openableShapeIssues(value),[]);
@@ -107,6 +117,22 @@ test("openable shape validation rejects containers and nested entries that would
   value.scenes.start.text=["Safe"];
   value.clocks={search:null};
   assert.ok(Model.openableShapeIssues(value).some(x=>/clocks\.search must be an object/i.test(x)));
+});
+
+test("openable shape validation rejects malformed check subcontainers",()=>{
+  const value=Model.createAdventureDraft("check-shape","Check Shape",1);
+  value.scenes.start.choices=[{
+    id:"check",label:"Check",resolution:"check",actor:{mode:"select",eligible:["*"]},
+    check:{goal:"Goal",approach:"Approach",baseTN:40,attributes:["int","dex"],skill:"Awareness",situationalModifiers:{}},
+    success:{text:"Success",end:"victory"},failure:{text:"Failure",end:"defeat"},twistPreview:"Twist",twist:{text:"Twist",end:"victory"}
+  }];
+  let issues=Model.openableShapeIssues(value);
+  assert.ok(issues.some(x=>/check\.situationalModifiers must be an array/i.test(x)));
+  value.scenes.start.choices[0].check.situationalModifiers=[null];
+  issues=Model.openableShapeIssues(value);
+  assert.ok(issues.some(x=>/situationalModifiers\[0\] must be an object/i.test(x)));
+  value.scenes.start.choices[0].check.situationalModifiers=[];
+  assert.equal(Model.openableShapeIssues(value).some(x=>/situationalModifiers/i.test(x)),false);
 });
 
 test("openable shape validation rejects non-array enemy ability tags",()=>{
