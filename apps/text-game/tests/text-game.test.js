@@ -241,4 +241,5 @@ test("static application exposes local files, three save slots, and log export",
   assert.match(source,/function vnHistoryHtml/);assert.match(source,/id="vnHistory"/);assert.match(source,/entry\.sequence<=sequence&&isVnEntry\(entry\)/,"only previously revealed VN messages appear above the active box");
   assert.match(source,/else if\(nextVnEntry\(\)\)renderVnEntry/,"queued VN entries take precedence over combat rendering");
   assert.doesNotMatch(source,/!run\.combat&&nextVnEntry/,"combat transitions must not bypass queued story entries");
+  assert.match(source,/function zoneConnectionsHtml/);assert.match(source,/Core\.adjacent\(run\.combat,zone\.id\)/);assert.match(source,/Direct connections/);assert.match(source,/edge\.cost} AP/,"zone cards disclose authored connection costs");
 });
