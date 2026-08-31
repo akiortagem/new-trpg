@@ -202,4 +202,6 @@ test("static application exposes local files, three save slots, and log export",
   assert.match(source,/new Blob\(\[JSON\.stringify\(payload,null,2\)\]/);
   assert.doesNotMatch(source,/fetch\s*\(/,"the app makes no network request");
   assert.match(source,/typeVnText/);assert.match(source,/class="vn-textbox/);assert.match(source,/Click to reveal/);assert.doesNotMatch(source,/storyStreamHtml/);
+  assert.match(source,/else if\(nextVnEntry\(\)\)renderVnEntry/,"queued VN entries take precedence over combat rendering");
+  assert.doesNotMatch(source,/!run\.combat&&nextVnEntry/,"combat transitions must not bypass queued story entries");
 });
