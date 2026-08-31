@@ -80,7 +80,7 @@ function validateChoice(choice,path,errors,companionIds,clockIds){
     if(!isObject(choice.check))errors.push(error(`${path}.check`,"must be an object"));
     else{
       if(!Array.isArray(choice.check.attributes)||choice.check.attributes.length!==2||choice.check.attributes.some(x=>!ATTRIBUTES.includes(x)))errors.push(error(`${path}.check.attributes`,"must contain exactly two attribute ids"));
-      requireString(errors,choice.check.skill,`${path}.check.skill`);requireNumber(errors,choice.check.gmModifier,`${path}.check.gmModifier`);
+      requireString(errors,choice.check.skill,`${path}.check.skill`);requireNumber(errors,choice.check.baseTN,`${path}.check.baseTN`,25);if(Number.isFinite(choice.check.baseTN)&&choice.check.baseTN>60)errors.push(error(`${path}.check.baseTN`,"cannot exceed 60"));
       if(choice.check.situationalModifiers&&!Array.isArray(choice.check.situationalModifiers))errors.push(error(`${path}.check.situationalModifiers`,"must be an array"));
       if(choice.check.clock&&!clockIds.has(choice.check.clock))errors.push(error(`${path}.check.clock`,`references unknown clock ${choice.check.clock}`));
     }
@@ -179,6 +179,7 @@ function createRun(mainCharacter,adventure,random=Math.random){
 function enterCurrentScene(run,random=Math.random){
   const current=scene(run);if(!current)throw new Error(`Unknown scene ${run.sceneId}.`);
   log(run,"scene.entered",`Entered ${current.title}.`,{sceneId:run.sceneId,type:current.type});
+  if(current.type==="scene")for(const passage of current.text){if(typeof passage==="string")log(run,"story.narration",passage,{sceneId:run.sceneId});else log(run,passage.speaker?"story.dialogue":"story.narration",passage.text,{sceneId:run.sceneId,speaker:passage.speaker||null})}
   if(current.type==="ending"){run.status=current.outcome;run.ending={title:current.title,text:current.text||`Adventure ended in ${current.outcome}.`,outcome:current.outcome};log(run,"run.ended",run.ending.text,{outcome:current.outcome});}
   if(current.type==="combat")startCombat(run,current,random);
 }
@@ -214,7 +215,7 @@ function checkTotal(run,choice,actorId){
   const actor=character(run,actorId);if(!actor)throw new Error("The selected actor is not eligible.");
   const [first,second]=choice.check.attributes,skillRank=actor.skills[choice.check.skill]||0;
   const situational=(choice.check.situationalModifiers||[]).reduce((sum,item)=>sum+item.value,0);
-  return{tn:actor.attributes[first]+actor.attributes[second]+skillRank*5+choice.check.gmModifier+situational,first:first,second:second,skill:choice.check.skill,skillRank,gmModifier:choice.check.gmModifier,situationalModifiers:clone(choice.check.situationalModifiers||[])};
+  return{tn:choice.check.baseTN+actor.attributes[first]+actor.attributes[second]+skillRank*5+situational,baseTN:choice.check.baseTN,first:first,second:second,skill:choice.check.skill,skillRank,situationalModifiers:clone(choice.check.situationalModifiers||[])};
 }
 function setWorldPath(run,path,value,add=false){
   const parts=path.split(".");if(!["flags","counters","quest","clocks"].includes(parts[0])||parts.some(x=>["__proto__","constructor","prototype"].includes(x)))throw new Error(`Unsafe effect path ${path}.`);
