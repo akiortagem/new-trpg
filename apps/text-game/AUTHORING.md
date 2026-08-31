@@ -163,7 +163,7 @@ The app does not infer automatic success from an ability name. The author decide
 
 ## Checks and actors
 
-A check choice names its acting character policy, its two attributes, its one skill, the GM Modifier, and every distinct situational modifier. The interface discloses all of these and the final TN before the player commits.
+A check choice names its acting character policy, Base TN, two attributes, one skill, and every distinct situational modifier. The interface discloses all of these and the final TN before the player commits.
 
 Use a fixed actor when the scenario determines who acts:
 
@@ -183,16 +183,16 @@ Use a selectable actor when the player may choose among eligible party members:
 "check": {
   "goal": "Reach the far bank before the pursuers arrive.",
   "approach": "Brace a rope and cross against the current.",
+  "baseTN": 40,
   "attributes": ["str", "end"],
   "skill": "Athletics",
-  "gmModifier": -20,
   "situationalModifiers": [
     { "label": "Secured rope", "value": 15 }
   ]
 }
 ```
 
-The final TN is calculated as written in the rules. A TN of 100 or more succeeds without rolling. A TN of 0 or less fails without rolling. The latter is not a failed check, so it does not offer Success with a Twist.
+Use Base TN 60 for a Challenging task, 40 for a Heroic task, or 25 for an Extremely Heroic task. Values between 25 and 60 are valid. The final TN is calculated as written in the rules. A TN of 100 or more succeeds without rolling. A TN of 0 or less fails without rolling. The latter is not a failed check, so it does not offer Success with a Twist.
 
 Every rolled check must provide three authored outcomes:
 
@@ -211,9 +211,9 @@ Every rolled check must provide three authored outcomes:
   "check": {
     "goal": "Get the party across the river.",
     "approach": "Brace and guide the ferry rope.",
+    "baseTN": 40,
     "attributes": ["str", "end"],
     "skill": "Athletics",
-    "gmModifier": -20,
     "situationalModifiers": []
   },
   "success": {
@@ -276,9 +276,9 @@ Attach a contribution to a clock with `check.clock`:
 
 ```json
 "check": {
+  "baseTN": 40,
   "attributes": ["int", "dex"],
   "skill": "Investigation",
-  "gmModifier": -20,
   "situationalModifiers": [],
   "clock": "search"
 }
@@ -465,9 +465,9 @@ The following file is a format example, not an included playable adventure. It c
           "check": {
             "goal": "Locate the raiders before entering their ambush.",
             "approach": "Separate the wagon trail from the newer bootprints.",
+            "baseTN": 60,
             "attributes": ["int", "dex"],
             "skill": "Awareness",
-            "gmModifier": 20,
             "situationalModifiers": []
           },
           "success": {
@@ -546,7 +546,7 @@ The following file is a format example, not an included playable adventure. It c
 - The adventure works with any valid main-character file and refers to it only as `$main`.
 - Every companion has a unique id and a complete character definition.
 - Every certain action is explicitly marked `automatic`; the app is not expected to infer it.
-- Every check exposes exactly two attributes, one skill, the GM Modifier, and all situational modifiers.
+- Every check exposes a Base TN from 25 to 60, exactly two attributes, one skill, and all situational modifiers.
 - Every rolled check authors Success, Failure, Success with a Twist, and a vague twist preview.
 - Failed investigation never removes the information required to continue unless that consequence ends the adventure intentionally.
 - Quest delays state their time cost before the player chooses them.
