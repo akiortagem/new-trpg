@@ -11,6 +11,15 @@
     return String(value||"item").toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"item";
   }
 
+  function validateWizardDraftInput(id,title,days){
+    const errors=[];
+    if(!String(id||"").trim())errors.push("Adventure ID is required.");
+    if(!String(title||"").trim())errors.push("Title is required.");
+    const questDays=Number(days);
+    if(!Number.isFinite(questDays)||questDays<0)errors.push("Quest days must be 0 or greater.");
+    return errors;
+  }
+
   function createAdventureDraft(id,title,days){
     return {
       schemaVersion:2,
@@ -85,5 +94,24 @@
     return issues;
   }
 
-  return {ABILITY_KINDS,slug,createAdventureDraft,renameChoiceId,abilityUsesTargetBounds,ensureAbilityKindFields,clockIds,canUseAdvanceClock,clockEffectIssues};
+  function updateBattlefieldLink(scene,index,changes){
+    const links=scene?.battlefield?.links;
+    if(!Array.isArray(links)||!links[index])return{ok:false,error:"Battlefield link not found."};
+    const link=links[index];
+    if(Object.prototype.hasOwnProperty.call(changes||{},"cost")){
+      const cost=Number(changes.cost);
+      if(!Number.isInteger(cost)||cost<1)return{ok:false,error:"Move cost must be a positive whole number."};
+      link.cost=cost;
+    }
+    return{ok:true,link};
+  }
+
+  function removeBattlefieldLink(scene,index){
+    const links=scene?.battlefield?.links;
+    if(!Array.isArray(links)||!links[index])return{ok:false,error:"Battlefield link not found."};
+    const [removed]=links.splice(index,1);
+    return{ok:true,removed};
+  }
+
+  return {ABILITY_KINDS,slug,validateWizardDraftInput,createAdventureDraft,renameChoiceId,abilityUsesTargetBounds,ensureAbilityKindFields,clockIds,canUseAdvanceClock,clockEffectIssues,updateBattlefieldLink,removeBattlefieldLink};
 });
