@@ -20,7 +20,7 @@ test("wizard draft validation rejects missing required fields and negative days"
   assert.deepEqual(Model.validateWizardDraftInput("adventure","Title",0),[]);
   assert.ok(Model.validateWizardDraftInput("","Title",1).some(x=>/id is required/i.test(x)));
   assert.ok(Model.validateWizardDraftInput("adventure","",1).some(x=>/title is required/i.test(x)));
-  assert.ok(Model.validateWizardDraftInput("adventure","Title",-1).some(x=>/0 or greater/i.test(x)));
+  assert.ok(Model.validateWizardDraftInput("adventure","Title",-1).some(x=>/zero or greater/i.test(x)));
 });
 
 test("choice renames reject duplicate sibling ids without mutating the scene",()=>{
@@ -86,7 +86,7 @@ test("battlefield links can be corrected and removed through model helpers",()=>
   assert.equal(invalid.ok,false);
   assert.equal(scene.battlefield.links[0].cost,3);
   const removed=Model.removeBattlefieldLink(scene,0);
-  assert.equal(removed.ok,true);
+  assert.equal(removed,true);
   assert.deepEqual(scene.battlefield.links,[{from:"ridge",to:"camp",cost:2}]);
 });
 
