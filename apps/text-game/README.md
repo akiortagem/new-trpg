@@ -27,7 +27,7 @@ Character files use schema version 1. Adventure files use schema version 2. Save
 - Scripted narration, dialogue, individual actions, and party decisions.
 - Fixed actors or player-selected eligible actors for checks.
 - Full disclosure of Base TN, attributes, skill, modifiers, and final TN before rolling.
-- A visual-novel-style story stream that keeps narration, dialogue, choices, rolls, and outcomes in chronological order.
+- A visual-novel presentation that shows one narration, dialogue, choice, roll, or outcome at a time in a fixed text box, with character-by-character text and click-to-reveal/advance controls.
 - Automatic success or failure when the final TN is at least 100 or at most 0.
 - Author-marked no-roll outcomes.
 - Failed checks followed by the choice to keep failure or accept a vaguely previewed Success with a Twist.
