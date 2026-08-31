@@ -89,3 +89,23 @@ test("battlefield links can be corrected and removed through model helpers",()=>
   assert.equal(removed.ok,true);
   assert.deepEqual(scene.battlefield.links,[{from:"ridge",to:"camp",cost:2}]);
 });
+
+test("openable shape validation rejects containers that would crash structured rendering",()=>{
+  const value=Model.createAdventureDraft("shape-test","Shape Test",1);
+  assert.deepEqual(Model.openableShapeIssues(value),[]);
+  value.party={};
+  assert.ok(Model.openableShapeIssues(value).some(x=>/party must be an array/i.test(x)));
+  value.party=[];
+  value.scenes.start.choices={};
+  assert.ok(Model.openableShapeIssues(value).some(x=>/choices must be an array/i.test(x)));
+});
+
+test("add effects require finite numeric values",()=>{
+  const value=Model.createAdventureDraft("add-test","Add Test",1);
+  value.scenes.start.choices[0].outcome.effects=[{type:"add",path:"quest.elapsedDays",value:"one"}];
+  assert.equal(Model.numericAddEffectIssues(value).length,1);
+  assert.deepEqual(Model.parseAddEffectValue("2"),{ok:true,value:2});
+  assert.equal(Model.parseAddEffectValue("one").ok,false);
+  value.scenes.start.choices[0].outcome.effects[0].value=2;
+  assert.deepEqual(Model.numericAddEffectIssues(value),[]);
+});
