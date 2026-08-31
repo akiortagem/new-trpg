@@ -63,5 +63,27 @@
     return ability;
   }
 
-  return {ABILITY_KINDS,slug,createAdventureDraft,renameChoiceId,abilityUsesTargetBounds,ensureAbilityKindFields};
+  function clockIds(adventure){
+    return Object.keys(adventure?.clocks||{});
+  }
+
+  function canUseAdvanceClock(adventure){
+    return clockIds(adventure).length>0;
+  }
+
+  function clockEffectIssues(adventure){
+    const valid=new Set(clockIds(adventure)),issues=[];
+    function walk(value,path="adventure"){
+      if(!value||typeof value!=="object")return;
+      if(!Array.isArray(value)&&value.type==="advance-clock"&&!valid.has(value.id)){
+        issues.push({path,id:value.id||"",message:`${path}: advance-clock references unknown clock ${value.id||"(missing)"}.`});
+      }
+      if(Array.isArray(value))value.forEach((child,index)=>walk(child,`${path}[${index}]`));
+      else for(const [key,child] of Object.entries(value))walk(child,`${path}.${key}`);
+    }
+    walk(adventure?.scenes||{},"adventure.scenes");
+    return issues;
+  }
+
+  return {ABILITY_KINDS,slug,createAdventureDraft,renameChoiceId,abilityUsesTargetBounds,ensureAbilityKindFields,clockIds,canUseAdvanceClock,clockEffectIssues};
 });
