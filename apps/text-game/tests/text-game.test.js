@@ -109,6 +109,15 @@ test("same-scene dialogue outcomes return to choices without replaying the scene
   assert.equal(run.sceneId,"test");assert.equal(run.log.filter(x=>x.type==="scene.entered").length,enteredBefore);assert.equal(run.log.filter(x=>x.type.startsWith("story.")).length,passagesBefore);assert.deepEqual(Core.visibleChoices(run).map(x=>x.id),["leave"]);assert.ok(run.log.some(x=>x.type==="outcome.automatic"&&x.message==="The scout answers the question."));
 });
 
+test("returning from a dialogue branch does not replay the parent scene",()=>{
+  const value=adventure();value.initialState.flags.asked=false;value.scenes.test.choices=[
+    {id:"ask",label:"Ask about the ruins",resolution:"automatic",reason:"Conversation",when:{path:"flags.asked",equals:false},outcome:{text:"The scout considers the question.",next:"ruins-answer",effects:[{type:"set",path:"flags.asked",value:true}]}},
+    {id:"leave",label:"End the conversation",resolution:"automatic",reason:"Conversation",outcome:{text:"The party departs.",next:"fight"}}
+  ];value.scenes["ruins-answer"]={type:"scene",title:"The Scout's Answer",text:["The scout describes the ruins."],choices:[{id:"back",label:"Ask about something else",resolution:"automatic",reason:"Conversation",outcome:{text:"The scout waits for another question.",next:"test"}}]};
+  const run=Core.createRun(character(),value);Core.resolveChoice(run,"ask");assert.equal(run.sceneId,"ruins-answer");Core.resolveChoice(run,"back");
+  assert.equal(run.sceneId,"test");assert.deepEqual(Core.visibleChoices(run).map(x=>x.id),["leave"]);assert.equal(run.log.filter(x=>x.type==="scene.entered"&&x.data.sceneId==="test").length,1);assert.equal(run.log.filter(x=>x.type==="story.narration"&&x.message==="Choose.").length,1);
+});
+
 test("same-scene combat outcomes start a new encounter",()=>{
   for(const outcome of ["victory","defeat"]){
     const value=adventure("fight");value.scenes.fight[outcome].next="fight";const run=Core.createRun(character(),value,()=>0.5),finishedCombat=run.combat;

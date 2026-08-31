@@ -180,13 +180,18 @@ function createRun(mainCharacter,adventure,random=Math.random){
   if(characterErrors.length||adventureErrors.length)throw new Error([...characterErrors,...adventureErrors].join("\n"));
   const main=clone(mainCharacter),preparedAdventure=materializeAdventure(adventure,main.name),companions=clone(preparedAdventure.party);
   if(companions.some(x=>x.id===main.id))throw new Error(`The main character id ${main.id} conflicts with an adventure companion id.`);
-  const run={engineVersion:ENGINE_VERSION,runId:`run-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,adventure:preparedAdventure,mainCharacterTemplate:clone(mainCharacter),mainCharacterId:main.id,characters:[main,...companions],sceneId:preparedAdventure.startScene,status:"playing",ending:null,world:{flags:clone(preparedAdventure.initialState?.flags||{}),counters:clone(preparedAdventure.initialState?.counters||{}),quest:{remainingDays:preparedAdventure.questDays??null,elapsedDays:0},clocks:initialClocks(preparedAdventure)},pendingTwist:null,combat:null,log:[],startedAt:new Date().toISOString()};
+  const run={engineVersion:ENGINE_VERSION,runId:`run-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,adventure:preparedAdventure,mainCharacterTemplate:clone(mainCharacter),mainCharacterId:main.id,characters:[main,...companions],sceneId:preparedAdventure.startScene,visitedSceneIds:[],status:"playing",ending:null,world:{flags:clone(preparedAdventure.initialState?.flags||{}),counters:clone(preparedAdventure.initialState?.counters||{}),quest:{remainingDays:preparedAdventure.questDays??null,elapsedDays:0},clocks:initialClocks(preparedAdventure)},pendingTwist:null,combat:null,log:[],startedAt:new Date().toISOString()};
   log(run,"run.started",`Started ${preparedAdventure.title} with ${main.name}.`,{adventureId:preparedAdventure.id,mainCharacterId:main.id});
   enterCurrentScene(run,random);
   return run;
 }
 function enterCurrentScene(run,random=Math.random){
   const current=scene(run);if(!current)throw new Error(`Unknown scene ${run.sceneId}.`);
+  if(current.type==="scene"){
+    if(!Array.isArray(run.visitedSceneIds))run.visitedSceneIds=[...new Set(run.log.filter(entry=>entry.type==="scene.entered"&&entry.data?.type==="scene").map(entry=>entry.data.sceneId))];
+    if(run.visitedSceneIds.includes(run.sceneId))return;
+    run.visitedSceneIds.push(run.sceneId);
+  }
   log(run,"scene.entered",`Entered ${current.title}.`,{sceneId:run.sceneId,type:current.type});
   if(current.type==="scene")for(const passage of current.text){if(typeof passage==="string")log(run,"story.narration",passage,{sceneId:run.sceneId});else log(run,passage.speaker?"story.dialogue":"story.narration",passage.text,{sceneId:run.sceneId,speaker:passage.speaker||null})}
   if(current.type==="ending"){run.status=current.outcome;run.ending={title:current.title,text:current.text||`Adventure ended in ${current.outcome}.`,outcome:current.outcome};log(run,"run.ended",run.ending.text,{outcome:current.outcome});}
@@ -245,7 +250,6 @@ function applyOutcome(run,outcome,kind,random=Math.random){
   log(run,`outcome.${kind}`,outcome.text,{effects:outcome.effects||[],next:outcome.next||null,end:outcome.end||null});
   applyEffects(run,outcome.effects||[]);
   if(outcome.end){run.status=outcome.end;run.ending={title:outcome.title||"Adventure End",text:outcome.text,outcome:outcome.end};log(run,"run.ended",outcome.text,{outcome:outcome.end});return}
-  if(outcome.next===run.sceneId&&scene(run)?.type==="scene")return;
   run.sceneId=outcome.next;enterCurrentScene(run,random);
 }
 function resolveChoice(run,choiceId,actorId=null,random=Math.random){
