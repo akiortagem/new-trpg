@@ -1,6 +1,6 @@
 # Out-of-Combat Rules
 
-**30 August 2026**
+**31 August 2026**
 
 Outside combat, play returns to conversation. The players decide what their characters pursue and how they pursue it. The GM describes the world, judges what is possible, and calls for a check when the outcome is both uncertain and important.
 
@@ -41,13 +41,21 @@ Competence includes routine professional behavior. A thief opening an ordinary l
 
 Every uncertain action outside combat uses a percentile roll-under check.
 
-> **TN = Attribute + Attribute + Skill + GM Modifier + situational modifiers**
+> **TN = Base TN + Attribute + Attribute + Skill + situational modifiers**
 
 A check uses exactly two attributes and no more than one skill. The same attribute may be used twice when the approach genuinely depends upon it in both parts of the task. A skill contributes 5 points per rank; an unpurchased or inapplicable skill contributes nothing.
 
-The GM Modifier represents the inherent difficulty of the attempt, including resistance from an NPC when applicable. Values of +0, −20, −40, and −60 are useful points of reference, but they are neither named difficulty tiers nor required increments. The GM may choose any modifier that fits the circumstances.
+The GM chooses a Base TN for the task before adding the character's abilities. Opposition from an NPC is part of this choice; it does not add an opposed roll.
 
-Distinct situational benefits and penalties are applied after the GM Modifier, and all relevant modifiers stack. The GM tells the player either the modifier or the final TN before the roll is made.
+| Difficulty | Base TN | Use when... |
+|---|---:|---|
+| Challenging | 60 | The task demands care or competence under meaningful pressure. |
+| Heroic | 40 | The task would be remarkable even for an experienced adventurer. |
+| Extremely Heroic | 25 | The task lies at the edge of what an adventurer could plausibly accomplish. |
+
+The GM may choose any Base TN from 25 to 60 when a task falls between these points. Easier work normally requires no roll; if its outcome is still uncertain and important, use 60 and account for a concrete advantage with a situational modifier.
+
+Distinct situational benefits and penalties are applied after the Base TN, and all relevant modifiers stack. The GM tells the player the Base TN, every situational modifier, and the final TN before the roll is made.
 
 Roll d100 and compare the result with the TN:
 
@@ -94,7 +102,7 @@ The GM never rolls to determine whether an NPC succeeds. When an NPC creates unc
 
 If an assassin stalks the entire party, the player whose character is most suited to notice makes the roll. If the assassin targets an isolated character, that character's player rolls. Failure may allow the NPC to achieve the threatened result outright: the ambush begins, the disguise is exposed, or the letter is stolen.
 
-When a PC acts against an NPC, the GM accounts for the NPC's ability, position, and resistance through the GM Modifier. Out-of-combat opposition does not use a separate opposed roll or require an NPC statistic to be inserted into the formula.
+When a PC acts against an NPC, the GM accounts for the NPC's ability, position, and resistance when choosing the Base TN. Out-of-combat opposition does not use a separate opposed roll or require an NPC statistic to be inserted into the formula.
 
 ### Social Actions
 
