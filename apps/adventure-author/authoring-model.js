@@ -11,15 +11,6 @@
     return String(value||"item").toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"item";
   }
 
-  function validateWizardDraftInput(id,title,days){
-    const errors=[];
-    if(!String(id||"").trim())errors.push("Adventure ID is required.");
-    if(!String(title||"").trim())errors.push("Title is required.");
-    const questDays=Number(days);
-    if(!Number.isFinite(questDays)||questDays<0)errors.push("Quest days must be 0 or greater.");
-    return errors;
-  }
-
   function createAdventureDraft(id,title,days){
     return {
       schemaVersion:2,
@@ -94,24 +85,86 @@
     return issues;
   }
 
+  function validateWizardDraftInput(id,title,days){
+    const errors=[];
+    if(!String(id||"").trim())errors.push("Adventure ID is required.");
+    if(!String(title||"").trim())errors.push("Title is required.");
+    const n=Number(days);
+    if(!Number.isFinite(n)||n<0)errors.push("Quest days must be zero or greater.");
+    return errors;
+  }
+
   function updateBattlefieldLink(scene,index,changes){
     const links=scene?.battlefield?.links;
     if(!Array.isArray(links)||!links[index])return{ok:false,error:"Battlefield link not found."};
-    const link=links[index];
-    if(Object.prototype.hasOwnProperty.call(changes||{},"cost")){
-      const cost=Number(changes.cost);
-      if(!Number.isInteger(cost)||cost<1)return{ok:false,error:"Move cost must be a positive whole number."};
-      link.cost=cost;
-    }
-    return{ok:true,link};
+    const next={...links[index],...changes};
+    if(!Number.isInteger(Number(next.cost))||Number(next.cost)<1)return{ok:false,error:"Move cost must be a positive whole number."};
+    next.cost=Number(next.cost);
+    links[index]=next;
+    return{ok:true,link:next};
   }
 
   function removeBattlefieldLink(scene,index){
     const links=scene?.battlefield?.links;
-    if(!Array.isArray(links)||!links[index])return{ok:false,error:"Battlefield link not found."};
-    const [removed]=links.splice(index,1);
-    return{ok:true,removed};
+    if(!Array.isArray(links)||!links[index])return false;
+    links.splice(index,1);
+    return true;
   }
 
-  return {ABILITY_KINDS,slug,validateWizardDraftInput,createAdventureDraft,renameChoiceId,abilityUsesTargetBounds,ensureAbilityKindFields,clockIds,canUseAdvanceClock,clockEffectIssues,updateBattlefieldLink,removeBattlefieldLink};
+  function openableShapeIssues(value){
+    const issues=[];
+    const object=v=>Boolean(v)&&typeof v==="object"&&!Array.isArray(v);
+    if(!object(value))return["Adventure must be a JSON object."];
+    if(!Array.isArray(value.party))issues.push("party must be an array.");
+    if(!object(value.initialState))issues.push("initialState must be an object.");
+    else{
+      if(!object(value.initialState.flags))issues.push("initialState.flags must be an object.");
+      if(!object(value.initialState.counters))issues.push("initialState.counters must be an object.");
+    }
+    if(!object(value.clocks))issues.push("clocks must be an object.");
+    if(!object(value.scenes))issues.push("scenes must be an object.");
+    else for(const [id,scene] of Object.entries(value.scenes)){
+      if(!object(scene)){issues.push(`scenes.${id} must be an object.`);continue;}
+      if(scene.type==="scene"){
+        if(!Array.isArray(scene.text))issues.push(`scenes.${id}.text must be an array.`);
+        if(!Array.isArray(scene.choices))issues.push(`scenes.${id}.choices must be an array.`);
+      }
+      if(scene.type==="combat"){
+        if(!object(scene.battlefield))issues.push(`scenes.${id}.battlefield must be an object.`);
+        else{
+          if(!Array.isArray(scene.battlefield.zones))issues.push(`scenes.${id}.battlefield.zones must be an array.`);
+          if(!Array.isArray(scene.battlefield.links))issues.push(`scenes.${id}.battlefield.links must be an array.`);
+        }
+        if(!object(scene.pcStarts))issues.push(`scenes.${id}.pcStarts must be an object.`);
+        if(!Array.isArray(scene.enemies))issues.push(`scenes.${id}.enemies must be an array.`);
+        if(scene.interactions!=null&&!Array.isArray(scene.interactions))issues.push(`scenes.${id}.interactions must be an array.`);
+      }
+    }
+    if(value.editor!=null){
+      if(!object(value.editor))issues.push("editor must be an object when present.");
+      else if(value.editor.nodes!=null&&!object(value.editor.nodes))issues.push("editor.nodes must be an object when present.");
+    }
+    return issues;
+  }
+
+  function numericAddEffectIssues(adventure){
+    const issues=[];
+    function walk(value,path="adventure.scenes"){
+      if(!value||typeof value!=="object")return;
+      if(!Array.isArray(value)&&value.type==="add"&&(typeof value.value!=="number"||!Number.isFinite(value.value))){
+        issues.push({path,message:`${path}.value: add effects require a finite numeric value.`});
+      }
+      if(Array.isArray(value))value.forEach((child,index)=>walk(child,`${path}[${index}]`));
+      else for(const [key,child] of Object.entries(value))walk(child,`${path}.${key}`);
+    }
+    walk(adventure?.scenes||{});
+    return issues;
+  }
+
+  function parseAddEffectValue(value){
+    const n=Number(value);
+    return Number.isFinite(n)?{ok:true,value:n}:{ok:false,error:"Add effect value must be a number."};
+  }
+
+  return {ABILITY_KINDS,slug,createAdventureDraft,renameChoiceId,abilityUsesTargetBounds,ensureAbilityKindFields,clockIds,canUseAdvanceClock,clockEffectIssues,validateWizardDraftInput,updateBattlefieldLink,removeBattlefieldLink,openableShapeIssues,numericAddEffectIssues,parseAddEffectValue};
 });
