@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Adventure Author</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><strong>Adventure Author</strong><span id="fileLabel">Untitled</span></div>
+    <div class="toolbar">
+      <button id="newBtn">New</button>
+      <button id="openBtn">Open</button>
+      <button id="saveBtn">Save</button>
+      <button id="undoBtn">Undo</button>
+      <button id="redoBtn">Redo</button>
+      <button id="jsonBtn">JSON</button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <aside class="leftbar">
+      <button data-add="scene">+ Scene</button>
+      <button data-add="combat">+ Combat</button>
+      <button data-add="ending">+ Ending</button>
+      <hr>
+      <button id="metaBtn">Adventure</button>
+      <button id="stateBtn">State & Clocks</button>
+      <button id="validateBtn">Validation</button>
+    </aside>
+
+    <section class="canvas-wrap">
+      <svg id="edges" class="edges"></svg>
+      <div id="canvas" class="canvas"></div>
+    </section>
+
+    <aside id="inspector" class="inspector">
+      <div class="empty-state">Create or open an adventure, then select a node.</div>
+    </aside>
+  </main>
+
+  <dialog id="wizardDialog">
+    <form method="dialog" id="wizardForm" class="dialog-card">
+      <h2>New Adventure</h2>
+      <label>Adventure ID<input id="wizId" value="new-adventure" required></label>
+      <label>Title<input id="wizTitle" value="New Adventure" required></label>
+      <label>Quest days<input id="wizDays" type="number" min="0" value="3" required></label>
+      <p class="hint">$main remains player-selected. Companion character JSON can be embedded after creation from Adventure settings.</p>
+      <div class="dialog-actions"><button value="cancel">Cancel</button><button id="createAdventureBtn" value="default">Create</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="jsonDialog">
+    <form method="dialog" class="dialog-card wide">
+      <h2>Raw Adventure JSON</h2>
+      <textarea id="jsonText" spellcheck="false"></textarea>
+      <div id="jsonError" class="error-text"></div>
+      <div class="dialog-actions"><button value="cancel">Cancel</button><button id="applyJsonBtn" value="default">Apply JSON</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="battlefieldDialog">
+    <div class="dialog-card battlefield-dialog">
+      <div class="dialog-title-row"><h2 id="battlefieldTitle">Battlefield</h2><button id="closeBattlefieldBtn">Close</button></div>
+      <div class="battlefield-layout">
+        <section class="battlefield-canvas-wrap"><svg id="battleEdges" class="edges"></svg><div id="battleCanvas" class="canvas battle-canvas"></div></section>
+        <aside id="battleInspector" class="battle-inspector"></aside>
+      </div>
+    </div>
+  </dialog>
+
+  <input id="fallbackOpen" type="file" accept="application/json,.json" hidden>
+  <script src="../text-game/core.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
