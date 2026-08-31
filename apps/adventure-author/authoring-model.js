@@ -1,7 +1,18 @@
 (function(root,factory){
   const api=factory();
   if(typeof module!=="undefined"&&module.exports)module.exports=api;
-  else root.AdventureAuthorModel=api;
+  else{
+    root.AdventureAuthorModel=api;
+    const core=root.TextGameCore;
+    if(core&&typeof core.validateCharacter==="function"){
+      const validateCharacter=core.validateCharacter;
+      core.validateCharacter=function validateCharacterForAuthoring(character,path="character"){
+        const errors=validateCharacter(character,path);
+        if(path==="character")errors.push(...api.companionImportIssues(character));
+        return errors;
+      };
+    }
+  }
 })(typeof globalThis!=="undefined"?globalThis:this,function(){
   "use strict";
 
@@ -49,9 +60,7 @@
     return{ok:true,id:next,changed:true};
   }
 
-  function abilityUsesTargetBounds(kind){
-    return kind==="multi"||kind==="rally";
-  }
+  function abilityUsesTargetBounds(kind){return kind==="multi"||kind==="rally";}
 
   function ensureAbilityKindFields(ability){
     if(!ability||typeof ability!=="object")return ability;
@@ -61,6 +70,11 @@
     }
     if(ability.kind==="persistent"&&!ability.condition)ability.condition={id:"Persistent Damage",amount:10,expression:"Burning"};
     return ability;
+  }
+
+  function companionImportIssues(character){
+    if(character?.id==="$main")return["character.id: $main is reserved for the player-selected main character and cannot be imported as a companion"];
+    return[];
   }
 
   function clockIds(adventure){return Object.keys(adventure?.clocks||{});}
@@ -109,12 +123,19 @@
       items.forEach((item,index)=>{if(!object(item))issues.push(`${path}[${index}] must be an object.`);});
       return true;
     };
+    const validateAbilities=(items,path)=>{
+      if(!arrayOfObjects(items,path))return;
+      items.forEach((ability,index)=>{
+        if(!object(ability))return;
+        if(ability.tags!=null&&!Array.isArray(ability.tags))issues.push(`${path}[${index}].tags must be an array when present.`);
+      });
+    };
     if(!object(value))return["Adventure must be a JSON object."];
 
     if(arrayOfObjects(value.party,"party")){
       for(const [index,member] of value.party.entries()){
         if(!object(member))continue;
-        if(member.abilities!=null)arrayOfObjects(member.abilities,`party[${index}].abilities`);
+        if(member.abilities!=null)validateAbilities(member.abilities,`party[${index}].abilities`);
       }
     }
 
@@ -139,8 +160,9 @@
             const base=`scenes.${id}.choices[${index}]`;
             const outcomes=choice.resolution==="automatic"?[choice.outcome]:choice.resolution==="check"?[choice.success,choice.failure,choice.twist]:[];
             outcomes.forEach((outcome,outcomeIndex)=>{
-              if(!object(outcome))issues.push(`${base}.${choice.resolution==="automatic"?"outcome":["success","failure","twist"][outcomeIndex]} must be an object.`);
-              else if(outcome.effects!=null)arrayOfObjects(outcome.effects,`${base}.${choice.resolution==="automatic"?"outcome":["success","failure","twist"][outcomeIndex]}.effects`);
+              const name=choice.resolution==="automatic"?"outcome":["success","failure","twist"][outcomeIndex];
+              if(!object(outcome))issues.push(`${base}.${name} must be an object.`);
+              else if(outcome.effects!=null)arrayOfObjects(outcome.effects,`${base}.${name}.effects`);
             });
           });
         }
@@ -153,7 +175,7 @@
         }
         if(!object(scene.pcStarts))issues.push(`scenes.${id}.pcStarts must be an object.`);
         if(arrayOfObjects(scene.enemies,`scenes.${id}.enemies`)){
-          scene.enemies.forEach((enemy,index)=>{if(object(enemy)&&enemy.abilities!=null)arrayOfObjects(enemy.abilities,`scenes.${id}.enemies[${index}].abilities`);});
+          scene.enemies.forEach((enemy,index)=>{if(object(enemy)&&enemy.abilities!=null)validateAbilities(enemy.abilities,`scenes.${id}.enemies[${index}].abilities`);});
         }
         if(scene.interactions!=null&&arrayOfObjects(scene.interactions,`scenes.${id}.interactions`)){
           scene.interactions.forEach((interaction,index)=>{if(object(interaction)&&interaction.effects!=null)arrayOfObjects(interaction.effects,`scenes.${id}.interactions[${index}].effects`);});
@@ -193,5 +215,5 @@
     return Number.isFinite(n)?{ok:true,value:n}:{ok:false,error:"Add effect value must be a number."};
   }
 
-  return {ABILITY_KINDS,slug,createAdventureDraft,renameChoiceId,abilityUsesTargetBounds,ensureAbilityKindFields,clockIds,canUseAdvanceClock,clockEffectIssues,validateWizardDraftInput,updateBattlefieldLink,removeBattlefieldLink,openableShapeIssues,numericAddEffectIssues,parseAddEffectValue};
+  return {ABILITY_KINDS,slug,createAdventureDraft,renameChoiceId,abilityUsesTargetBounds,ensureAbilityKindFields,companionImportIssues,clockIds,canUseAdvanceClock,clockEffectIssues,validateWizardDraftInput,updateBattlefieldLink,removeBattlefieldLink,openableShapeIssues,numericAddEffectIssues,parseAddEffectValue};
 });
