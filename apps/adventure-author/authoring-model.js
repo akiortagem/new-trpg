@@ -115,6 +115,14 @@
     links.splice(index,1);return true;
   }
 
+  function updateInteractionZone(scene,interactionId,zoneId){
+    const interaction=(scene?.interactions||[]).find(item=>item?.id===interactionId);
+    if(!interaction)return{ok:false,error:"Interaction not found."};
+    if(!(scene?.battlefield?.zones||[]).some(zone=>zone?.id===zoneId))return{ok:false,error:`Unknown battlefield zone ${zoneId}.`};
+    interaction.zone=zoneId;
+    return{ok:true,interaction};
+  }
+
   function openableShapeIssues(value){
     const issues=[];
     const object=v=>Boolean(v)&&typeof v==="object"&&!Array.isArray(v);
@@ -224,5 +232,5 @@
     return Number.isFinite(n)?{ok:true,value:n}:{ok:false,error:"Add effect value must be a number."};
   }
 
-  return {ABILITY_KINDS,slug,createAdventureDraft,renameChoiceId,abilityUsesTargetBounds,ensureAbilityKindFields,companionImportIssues,clockIds,canUseAdvanceClock,clockEffectIssues,validateWizardDraftInput,updateBattlefieldLink,removeBattlefieldLink,openableShapeIssues,numericAddEffectIssues,parseAddEffectValue};
+  return {ABILITY_KINDS,slug,createAdventureDraft,renameChoiceId,abilityUsesTargetBounds,ensureAbilityKindFields,companionImportIssues,clockIds,canUseAdvanceClock,clockEffectIssues,validateWizardDraftInput,updateBattlefieldLink,removeBattlefieldLink,updateInteractionZone,openableShapeIssues,numericAddEffectIssues,parseAddEffectValue};
 });
