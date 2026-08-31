@@ -57,3 +57,28 @@ test("runtime validation rejects stale advance-clock interaction references",()=
   assert.ok(errors.some(error=>error.includes("unknown progress clock old-search")));
   assert.throws(()=>Core.createRun(character(),value,()=>0.5),/unknown progress clock old-search/);
 });
+
+test("runtime validation rejects nonnumeric add effects",()=>{
+  const value=Model.createAdventureDraft("bad-add","Bad Add",1);
+  value.scenes.start.choices[0].outcome.effects=[{type:"add",path:"quest.elapsedDays",value:"one"}];
+  const errors=Core.validateAdventure(value);
+  assert.ok(errors.some(error=>error.includes("add effects require a finite numeric value")));
+  assert.throws(()=>Core.createRun(character(),value,()=>0.5),/add effects require a finite numeric value/);
+});
+
+test("move-unit interactions resolve the $main alias to the selected main character",()=>{
+  const value=Model.createAdventureDraft("move-main","Move Main",1);
+  value.scenes.start.choices[0].outcome={text:"Fight",next:"fight"};
+  value.scenes.fight=combat("fight");
+  value.scenes.fight.battlefield.zones.push({id:"other-zone",name:"Other Zone"});
+  value.scenes.fight.battlefield.links.push({from:"fight-zone",to:"other-zone",cost:1});
+  value.scenes.fight.interactions=[{id:"portal",name:"Portal",description:"Step through",text:"The portal moves you.",zone:"fight-zone",ap:1,once:true,effects:[{type:"move-unit",side:"pc",targetId:"$main",zone:"other-zone"}]}];
+  const run=Core.createRun(character(),value,()=>0.5);
+  Core.resolveChoice(run,"continue",null,()=>0.5);
+  assert.ok(run.combat);
+  const hero=run.combat.pcs.find(pc=>pc.id==="hero");
+  assert.equal(hero.zone,"fight-zone");
+  Core.performInteraction(run,"hero","portal",()=>0.5);
+  assert.equal(hero.zone,"other-zone");
+  assert.equal(run.combat.interactions[0].effects[0].targetId,"$main");
+});
