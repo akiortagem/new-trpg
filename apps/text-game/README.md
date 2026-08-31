@@ -24,7 +24,8 @@ The app does not include a playable adventure or main character. See [AUTHORING.
 
 - Scripted narration, dialogue, individual actions, and party decisions.
 - Fixed actors or player-selected eligible actors for checks.
-- Full disclosure of attributes, skill, modifiers, and final TN before rolling.
+- Full disclosure of Base TN, attributes, skill, modifiers, and final TN before rolling.
+- A visual-novel-style story stream that keeps narration, dialogue, choices, rolls, and outcomes in chronological order.
 - Automatic success or failure when the final TN is at least 100 or at most 0.
 - Author-marked no-roll outcomes.
 - Failed checks followed by the choice to keep failure or accept a vaguely previewed Success with a Twist.
