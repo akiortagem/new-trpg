@@ -47,3 +47,26 @@ test("multi and persistent abilities retain their kind-specific defaults",()=>{
   assert.deepEqual({minTargets:multi.minTargets,maxTargets:multi.maxTargets},{minTargets:2,maxTargets:3});
   assert.equal(persistent.condition.id,"Persistent Damage");
 });
+
+test("advance-clock effects require an authored clock",()=>{
+  const value=Model.createAdventureDraft("clock-test","Clock Test",1);
+  value.scenes.start.choices[0].outcome.effects=[{type:"advance-clock",id:"clock",segments:1}];
+  assert.equal(Model.canUseAdvanceClock(value),false);
+  const issues=Model.clockEffectIssues(value);
+  assert.equal(issues.length,1);
+  assert.match(issues[0].message,/unknown clock clock/i);
+
+  value.clocks.search={label:"Search",size:4};
+  value.scenes.start.choices[0].outcome.effects[0].id="search";
+  assert.equal(Model.canUseAdvanceClock(value),true);
+  assert.deepEqual(Model.clockEffectIssues(value),[]);
+});
+
+test("clock effect validation also catches stale battlefield interaction references",()=>{
+  const value=Model.createAdventureDraft("combat-clock","Combat Clock",1);
+  value.clocks.search={label:"Search",size:4};
+  value.scenes.fight={type:"combat",battlefield:{zones:[],links:[]},interactions:[{id:"lever",effects:[{type:"advance-clock",id:"old-search",segments:1}]}]};
+  const issues=Model.clockEffectIssues(value);
+  assert.equal(issues.length,1);
+  assert.match(issues[0].message,/old-search/);
+});
