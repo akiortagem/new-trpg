@@ -45,8 +45,11 @@
       return;
     }
     validateStateEffectPath(effect, path, issues);
-    if (effect.type === "advance-clock" && !validClocks.has(effect.id)) {
-      issues.push(`${path}.id: unknown progress clock ${effect.id || "(missing)"}`);
+    if (effect.type === "advance-clock") {
+      if (!validClocks.has(effect.id)) issues.push(`${path}.id: unknown progress clock ${effect.id || "(missing)"}`);
+      if (effect.segments != null && (typeof effect.segments !== "number" || !Number.isFinite(effect.segments))) {
+        issues.push(`${path}.segments: advance-clock segments must be a finite numeric value`);
+      }
     }
     if (effect.type === "add" && (typeof effect.value !== "number" || !Number.isFinite(effect.value))) {
       issues.push(`${path}.value: add effects require a finite numeric value`);
