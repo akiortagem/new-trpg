@@ -2,6 +2,8 @@
 
 const test=require("node:test");
 const assert=require("node:assert/strict");
+const fs=require("node:fs");
+const vm=require("node:vm");
 const Model=require("../authoring-model.js");
 
 function choice(id){return{id,label:id,resolution:"automatic",reason:"Test",outcome:{text:"Done",end:"victory"}};}
@@ -105,6 +107,39 @@ test("openable shape validation rejects containers and nested entries that would
   value.scenes.start.text=["Safe"];
   value.clocks={search:null};
   assert.ok(Model.openableShapeIssues(value).some(x=>/clocks\.search must be an object/i.test(x)));
+});
+
+test("openable shape validation rejects non-array enemy ability tags",()=>{
+  const value=Model.createAdventureDraft("tags-test","Tags Test",1);
+  value.scenes.fight={
+    type:"combat",
+    title:"Fight",
+    battlefield:{zones:[{id:"zone",name:"Zone"}],links:[]},
+    pcStarts:{$main:"zone"},
+    enemies:[{id:"enemy",name:"Enemy",zone:"zone",abilities:[{id:"strike",name:"Strike",kind:"attack",tags:{Physical:true}}]}],
+    interactions:[],
+    victory:{text:"Win",end:"victory"},
+    defeat:{text:"Lose",end:"defeat"}
+  };
+  const issues=Model.openableShapeIssues(value);
+  assert.ok(issues.some(x=>/enemies\[0\]\.abilities\[0\]\.tags must be an array/i.test(x)));
+  value.scenes.fight.enemies[0].abilities[0].tags=["Physical"];
+  assert.equal(Model.openableShapeIssues(value).some(x=>/\.tags must be an array/i.test(x)),false);
+});
+
+test("companion import reserves $main for the player-selected character",()=>{
+  assert.ok(Model.companionImportIssues({id:"$main"}).some(x=>/reserved/i.test(x)));
+  assert.deepEqual(Model.companionImportIssues({id:"mira"}),[]);
+});
+
+test("browser authoring validation rejects $main before companion import mutation",()=>{
+  const source=fs.readFileSync(require.resolve("../authoring-model.js"),"utf8");
+  const context={TextGameCore:{validateCharacter:()=>[]}};
+  context.globalThis=context;
+  vm.runInNewContext(source,context,{filename:"authoring-model.js"});
+  const errors=context.TextGameCore.validateCharacter({id:"$main"});
+  assert.ok(Array.from(errors).some(x=>/reserved/i.test(x)));
+  assert.deepEqual(Array.from(context.TextGameCore.validateCharacter({id:"mira"})),[]);
 });
 
 test("add effects require finite numeric values",()=>{
