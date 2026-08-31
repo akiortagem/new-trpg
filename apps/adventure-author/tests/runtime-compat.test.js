@@ -79,6 +79,26 @@ test("runtime validation rejects unsafe or unsupported state effect paths",()=>{
   assert.throws(()=>Core.createRun(character(),value,()=>0.5),/unsafe or unsupported state effect path flags\.__proto__\.count/);
 });
 
+test("runtime validation rejects combat-only effects in ordinary outcomes",()=>{
+  const value=Model.createAdventureDraft("bad-placement","Bad Placement",1);
+  value.scenes.start.choices[0].outcome.effects=[{type:"damage-enemy",targetId:"enemy",amount:10}];
+  const errors=Core.validateAdventure(value);
+  assert.ok(errors.some(error=>error.includes("effect type damage-enemy is not allowed in this container")));
+  assert.throws(()=>Core.createRun(character(),value,()=>0.5),/effect type damage-enemy is not allowed in this container/);
+});
+
+test("runtime validation rejects unknown interaction effects but accepts supported combat effects",()=>{
+  const value=Model.createAdventureDraft("interaction-effects","Interaction Effects",1);
+  value.scenes.start.choices[0].outcome={text:"Fight",next:"fight"};
+  value.scenes.fight=combat("fight");
+  value.scenes.fight.interactions=[{id:"trap",name:"Trap",description:"A trap",text:"It fires",zone:"fight-zone",ap:1,once:true,effects:[{type:"damage-enemy",targetId:"fight-enemy",amount:10}]}];
+  assert.deepEqual(Core.validateAdventure(value),[]);
+  value.scenes.fight.interactions[0].effects=[{type:"damge-enemy",targetId:"fight-enemy",amount:10}];
+  const errors=Core.validateAdventure(value);
+  assert.ok(errors.some(error=>error.includes("effect type damge-enemy is not allowed in this container")));
+  assert.throws(()=>Core.createRun(character(),value,()=>0.5),/effect type damge-enemy is not allowed in this container/);
+});
+
 test("move-unit interactions resolve the $main alias to the selected main character",()=>{
   const value=Model.createAdventureDraft("move-main","Move Main",1);
   value.scenes.start.choices[0].outcome={text:"Fight",next:"fight"};
