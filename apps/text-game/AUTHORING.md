@@ -190,7 +190,7 @@ Use `resolution: "automatic"` when the action requires no roll. This covers ordi
 
 The app does not infer automatic success from an ability name. The author decides that the defined effect resolves the task and marks the choice accordingly.
 
-When several choices belong to the same conversation or investigation, an outcome may set `next` to the id of its own scene. The app presents the choice and outcome text, applies its effects, and then returns directly to the scene's currently available choices. It does not repeat the scene title or opening passages. Use conditions and effects to hide questions that have already been asked or reveal new choices.
+An ordinary scene's title and opening passages are presented only on its first visit. When several choices belong to the same conversation or investigation, outcomes may lead to subscenes and then set `next` back to the original scene. Returning to any previously visited ordinary scene goes directly to its currently available choices without repeating its opening. Use conditions and effects to hide questions that have already been asked or reveal new choices. If prose must play again later, place that prose in a new scene with a distinct id. Combat scenes are not subject to this rule and may start again when an outcome points back to them.
 
 ## Checks and actors
 
