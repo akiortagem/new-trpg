@@ -28,7 +28,10 @@
     if (combatIds.length === 1) return safe;
 
     if (combatIds.length === 0) {
-      const id = "__compat_validation_combat__";
+      const usedIds = new Set(Object.keys(safe.scenes || {}));
+      let id = "__compat_validation_combat__";
+      let suffix = 2;
+      while (usedIds.has(id)) id = `__compat_validation_combat__${suffix++}`;
       const companionIds = (safe.party || []).map(character => character.id);
       safe.scenes[id] = {
         type: "combat",
