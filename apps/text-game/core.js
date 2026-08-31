@@ -5,7 +5,9 @@
 })(typeof globalThis!=="undefined"?globalThis:this,function(){
 "use strict";
 
-const VERSION=1;
+const ENGINE_VERSION=2;
+const CHARACTER_SCHEMA_VERSION=1;
+const ADVENTURE_SCHEMA_VERSION=2;
 const ATTRIBUTES=["str","end","vit","mnd","agi","dex","int"];
 const NPC_PRESETS=["optimal_killer","self_preserving","dramatic_gm"];
 const ATTACK_KINDS=["attack","multi","push","persistent","rush"];
@@ -37,7 +39,7 @@ function validateAbility(ability,path,errors){
 function validateCharacter(character,path="character"){
   const errors=[];
   if(!isObject(character))return[error(path,"must be a JSON object")];
-  if(character.schemaVersion!==VERSION)errors.push(error(`${path}.schemaVersion`,`must be ${VERSION}`));
+  if(character.schemaVersion!==CHARACTER_SCHEMA_VERSION)errors.push(error(`${path}.schemaVersion`,`must be ${CHARACTER_SCHEMA_VERSION}`));
   if(character.kind!=="character")errors.push(error(`${path}.kind`,"must be character"));
   requireString(errors,character.id,`${path}.id`);requireString(errors,character.name,`${path}.name`);requireString(errors,character.role,`${path}.role`);
   if(!isObject(character.attributes))errors.push(error(`${path}.attributes`,"must be an object"));
@@ -119,7 +121,7 @@ function validateCombat(scene,path,errors,partyIds){
 function validateAdventure(adventure){
   const errors=[];
   if(!isObject(adventure))return[error("adventure","must be a JSON object")];
-  if(adventure.schemaVersion!==VERSION)errors.push(error("adventure.schemaVersion",`must be ${VERSION}`));
+  if(adventure.schemaVersion!==ADVENTURE_SCHEMA_VERSION)errors.push(error("adventure.schemaVersion",`must be ${ADVENTURE_SCHEMA_VERSION}`));
   if(adventure.kind!=="adventure")errors.push(error("adventure.kind","must be adventure"));
   requireString(errors,adventure.id,"adventure.id");requireString(errors,adventure.title,"adventure.title");requireString(errors,adventure.startScene,"adventure.startScene");
   if(!Array.isArray(adventure.party))errors.push(error("adventure.party","must be an array of companion characters"));
@@ -171,7 +173,7 @@ function createRun(mainCharacter,adventure,random=Math.random){
   if(characterErrors.length||adventureErrors.length)throw new Error([...characterErrors,...adventureErrors].join("\n"));
   const main=clone(mainCharacter),companions=clone(adventure.party);
   if(companions.some(x=>x.id===main.id))throw new Error(`The main character id ${main.id} conflicts with an adventure companion id.`);
-  const run={engineVersion:VERSION,runId:`run-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,adventure:clone(adventure),mainCharacterTemplate:clone(mainCharacter),mainCharacterId:main.id,characters:[main,...companions],sceneId:adventure.startScene,status:"playing",ending:null,world:{flags:clone(adventure.initialState?.flags||{}),counters:clone(adventure.initialState?.counters||{}),quest:{remainingDays:adventure.questDays??null,elapsedDays:0},clocks:initialClocks(adventure)},pendingTwist:null,combat:null,log:[],startedAt:new Date().toISOString()};
+  const run={engineVersion:ENGINE_VERSION,runId:`run-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,adventure:clone(adventure),mainCharacterTemplate:clone(mainCharacter),mainCharacterId:main.id,characters:[main,...companions],sceneId:adventure.startScene,status:"playing",ending:null,world:{flags:clone(adventure.initialState?.flags||{}),counters:clone(adventure.initialState?.counters||{}),quest:{remainingDays:adventure.questDays??null,elapsedDays:0},clocks:initialClocks(adventure)},pendingTwist:null,combat:null,log:[],startedAt:new Date().toISOString()};
   log(run,"run.started",`Started ${adventure.title} with ${main.name}.`,{adventureId:adventure.id,mainCharacterId:main.id});
   enterCurrentScene(run,random);
   return run;
@@ -603,5 +605,5 @@ function combatSummary(combat){
   return{round:combat.round,phase:combat.phase,criticalAvailable:combat.round===combat.nextCriticalRound&&!combat.criticalUsed,pending:clone(combat.pending),pcs:clone(combat.pcs),enemies:clone(combat.enemies),zones:clone(combat.zones),links:clone(combat.links),metrics:clone(combat.metrics)};
 }
 
-return{VERSION,ATTRIBUTES,NPC_PRESETS,validateCharacter,validateAdventure,createRun,scene,party,visibleChoices,choiceActors,checkTotal,resolveChoice,resolveTwist,combatSummary,distance,adjacent,legalAbilityTargets,beginPcTurn,resolveRallySustain,movePc,abandonTransit,performPcAbility,useConsumable,recover,availableInteractions,performInteraction,prepare,endPcTurn,useCritical,reactionOptions,resolveReaction:resolveReactionAndContinue,resolvePrepared,continueEnemyPhase,checkCombatEnd,clone,percentile,d6};
+return{VERSION:ENGINE_VERSION,ENGINE_VERSION,CHARACTER_SCHEMA_VERSION,ADVENTURE_SCHEMA_VERSION,ATTRIBUTES,NPC_PRESETS,validateCharacter,validateAdventure,createRun,scene,party,visibleChoices,choiceActors,checkTotal,resolveChoice,resolveTwist,combatSummary,distance,adjacent,legalAbilityTargets,beginPcTurn,resolveRallySustain,movePc,abandonTransit,performPcAbility,useConsumable,recover,availableInteractions,performInteraction,prepare,endPcTurn,useCritical,reactionOptions,resolveReaction:resolveReactionAndContinue,resolvePrepared,continueEnemyPhase,checkCombatEnd,clone,percentile,d6};
 });
