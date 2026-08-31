@@ -2,7 +2,7 @@
 
 An adventure is a JSON file containing the entire scripted scenario. It supplies the companions, narration, choices, checks, consequences, state changes, and one combat encounter. A separate character JSON file supplies the player's main character.
 
-JSON does not permit comments. Unknown presentation fields are ignored, but required rules fields are validated before play begins. Both file types use `schemaVersion: 1`.
+JSON does not permit comments. Unknown presentation fields are ignored, but required rules fields are validated before play begins. Character files use `schemaVersion: 1`. Adventure files use `schemaVersion: 2`; version 2 introduces the required Base TN and is not compatible with adventures authored with the former difficulty-modifier field.
 
 ## Character files
 
@@ -100,7 +100,7 @@ The top level has this shape:
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "adventure",
   "id": "unique-adventure-id",
   "title": "Adventure Title",
@@ -407,7 +407,7 @@ The following file is a format example, not an included playable adventure. It c
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "adventure",
   "id": "miniature-road-test",
   "title": "The Broken Milestone",
