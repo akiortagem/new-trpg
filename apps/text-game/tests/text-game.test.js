@@ -66,7 +66,7 @@ test("Base TN uses a new adventure and save-engine version",()=>{
   const errors=Core.validateAdventure(legacy);assert.ok(errors.some(x=>x.includes("schemaVersion: must be 2")));assert.ok(errors.some(x=>x.includes("check.baseTN")));
 });
 
-test("scene narration and character dialogue enter the chronological story stream",()=>{
+test("scene narration and character dialogue enter the presentation queue",()=>{
   const run=Core.createRun(character(),adventure());assert.ok(run.log.some(x=>x.type==="story.narration"&&x.message==="Choose."));assert.ok(run.log.some(x=>x.type==="story.dialogue"&&x.data.speaker==="Ally"));
 });
 
@@ -201,5 +201,5 @@ test("static application exposes local files, three save slots, and log export",
   assert.match(source,/\[1,2,3\]/);
   assert.match(source,/new Blob\(\[JSON\.stringify\(payload,null,2\)\]/);
   assert.doesNotMatch(source,/fetch\s*\(/,"the app makes no network request");
-  assert.match(source,/storyStreamHtml/);assert.match(source,/story\.dialogue/);
+  assert.match(source,/typeVnText/);assert.match(source,/class="vn-textbox/);assert.match(source,/Click to reveal/);assert.doesNotMatch(source,/storyStreamHtml/);
 });
