@@ -245,6 +245,7 @@ function applyOutcome(run,outcome,kind,random=Math.random){
   log(run,`outcome.${kind}`,outcome.text,{effects:outcome.effects||[],next:outcome.next||null,end:outcome.end||null});
   applyEffects(run,outcome.effects||[]);
   if(outcome.end){run.status=outcome.end;run.ending={title:outcome.title||"Adventure End",text:outcome.text,outcome:outcome.end};log(run,"run.ended",outcome.text,{outcome:outcome.end});return}
+  if(outcome.next===run.sceneId&&scene(run)?.type==="scene")return;
   run.sceneId=outcome.next;enterCurrentScene(run,random);
 }
 function resolveChoice(run,choiceId,actorId=null,random=Math.random){

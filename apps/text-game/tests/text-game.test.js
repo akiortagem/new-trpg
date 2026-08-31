@@ -99,6 +99,25 @@ test("author-marked automatic choices never roll",()=>{
   assert.equal(result.result,"automatic");assert.equal(run.world.quest.elapsedDays,1);assert.equal(run.sceneId,"test");
 });
 
+test("same-scene dialogue outcomes return to choices without replaying the scene",()=>{
+  const value=adventure();value.initialState.flags.asked=false;value.scenes.test.choices=[
+    {id:"ask",label:"Ask about the trail",resolution:"automatic",reason:"Conversation",when:{path:"flags.asked",equals:false},outcome:{text:"The scout answers the question.",next:"test",effects:[{type:"set",path:"flags.asked",value:true}]}},
+    {id:"leave",label:"End the conversation",resolution:"automatic",reason:"Conversation",outcome:{text:"The party departs.",next:"fight"}}
+  ];
+  const run=Core.createRun(character(),value),enteredBefore=run.log.filter(x=>x.type==="scene.entered").length,passagesBefore=run.log.filter(x=>x.type.startsWith("story.")).length;
+  Core.resolveChoice(run,"ask");
+  assert.equal(run.sceneId,"test");assert.equal(run.log.filter(x=>x.type==="scene.entered").length,enteredBefore);assert.equal(run.log.filter(x=>x.type.startsWith("story.")).length,passagesBefore);assert.deepEqual(Core.visibleChoices(run).map(x=>x.id),["leave"]);assert.ok(run.log.some(x=>x.type==="outcome.automatic"&&x.message==="The scout answers the question."));
+});
+
+test("same-scene combat outcomes start a new encounter",()=>{
+  for(const outcome of ["victory","defeat"]){
+    const value=adventure("fight");value.scenes.fight[outcome].next="fight";const run=Core.createRun(character(),value,()=>0.5),finishedCombat=run.combat;
+    if(outcome==="victory")for(const enemy of run.combat.enemies)enemy.alive=false;else for(const pc of run.combat.pcs)pc.hp=0;
+    Core.checkCombatEnd(run,()=>0.5);
+    assert.ok(run.combat,`${outcome} starts the next encounter`);assert.notEqual(run.combat,finishedCombat);assert.equal(run.combat.sceneId,"fight");assert.equal(run.combat.round,1);
+  }
+});
+
 test("Critical Attack adds twice the chosen attribute and cannot be Defended",()=>{
   const value=adventure("fight");value.scenes.fight.enemies=[enemy({hp:70,preset:"self_preserving"})];
   const run=Core.createRun(character(),value,()=>0);const combat=run.combat,hero=combat.pcs.find(x=>x.id==="hero");
