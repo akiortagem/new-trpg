@@ -20,6 +20,8 @@ At the start screen:
 
 The app does not include a playable adventure or main character. See [AUTHORING.md](AUTHORING.md) for both formats and a complete miniature example.
 
+Character files use schema version 1. Adventure files use schema version 2. Save slots from engine version 1 are rejected with an explicit unsupported-version message because their checks predate Base TN.
+
 ## What the first version supports
 
 - Scripted narration, dialogue, individual actions, and party decisions.
