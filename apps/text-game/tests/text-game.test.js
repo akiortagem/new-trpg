@@ -37,6 +37,14 @@ test("any valid main-character id replaces $main without adventure restrictions"
   assert.deepEqual(run.characters.map(x=>x.id),["unexpected-main","ally"]);
 });
 
+test("authored display text can refer to the selected main character by name",()=>{
+  const value=adventure();value.title="{{main.name}}'s Adventure";value.scenes.test.title="A Trial for {{ main.name }}";value.scenes.test.text=["{{main.name}} enters.",{speaker:"{{main.name}}",text:"I am {{main.name}}."}];value.scenes.test.choices[0].label="Let {{main.name}} investigate";value.scenes.test.choices[0].check.goal="{{main.name}} finds the trail";value.scenes.test.choices[0].twistPreview="{{main.name}} succeeds, but is followed.";
+  const run=Core.createRun(character("hero","Rhea $&"),value);
+  assert.equal(run.adventure.title,"Rhea $&'s Adventure");assert.equal(run.adventure.scenes.test.title,"A Trial for Rhea $&");assert.equal(run.adventure.scenes.test.choices[0].label,"Let Rhea $& investigate");assert.equal(run.adventure.scenes.test.choices[0].check.goal,"Rhea $& finds the trail");assert.equal(run.adventure.scenes.test.choices[0].twistPreview,"Rhea $& succeeds, but is followed.");
+  assert.ok(run.log.some(x=>x.type==="story.narration"&&x.message==="Rhea $& enters."));assert.ok(run.log.some(x=>x.type==="story.dialogue"&&x.data.speaker==="Rhea $&"&&x.message==="I am Rhea $&."));
+  assert.equal(run.adventure.scenes.test.choices[0].actor.eligible[0],"*","rules references are not templated");
+});
+
 test("checks reveal and use the RAW TN formula",()=>{
   const run=Core.createRun(character(),adventure()),choice=Core.visibleChoices(run)[0];
   const preview=Core.checkTotal(run,choice,"hero");
