@@ -38,3 +38,22 @@ test("compatibility runtime accepts multiple authored combat scenes",()=>{
   assert.deepEqual(Core.validateAdventure(value),[]);
   assert.doesNotThrow(()=>Core.createRun(character(),value,()=>0.5));
 });
+
+test("runtime validation rejects advance-clock outcomes that reference no authored clock",()=>{
+  const value=Model.createAdventureDraft("bad-clock","Bad Clock",1);
+  value.scenes.start.choices[0].outcome.effects=[{type:"advance-clock",id:"clock",segments:1}];
+  const errors=Core.validateAdventure(value);
+  assert.ok(errors.some(error=>error.includes("unknown progress clock clock")));
+  assert.throws(()=>Core.createRun(character(),value,()=>0.5),/unknown progress clock clock/);
+});
+
+test("runtime validation rejects stale advance-clock interaction references",()=>{
+  const value=Model.createAdventureDraft("interaction-clock","Interaction Clock",1);
+  value.clocks.search={label:"Search",size:4};
+  value.scenes.start.choices[0].outcome={text:"Fight",next:"fight"};
+  value.scenes.fight=combat("fight");
+  value.scenes.fight.interactions=[{id:"lever",name:"Lever",description:"Pull it",text:"It moves",zone:"fight-zone",ap:1,once:true,effects:[{type:"advance-clock",id:"old-search",segments:1}]}];
+  const errors=Core.validateAdventure(value);
+  assert.ok(errors.some(error=>error.includes("unknown progress clock old-search")));
+  assert.throws(()=>Core.createRun(character(),value,()=>0.5),/unknown progress clock old-search/);
+});
