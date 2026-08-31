@@ -58,14 +58,15 @@ Character competence includes routine professional behavior. A thief is assumed 
 
 Outside combat, uncertain actions use a percentile roll-under check.
 
-> **TN = Attribute + Attribute + (Skill Rank × 5) + GM Modifier + situational modifiers**
+> **TN = Base TN + Attribute + Attribute + (Skill Rank × 5) + situational modifiers**
 
 - A check uses exactly two attributes.
 - A check uses zero or one skill, never more than one.
 - The same attribute may appear twice when the approach makes that reasonable.
 - All relevant positive and negative situational modifiers stack.
-- The GM chooses any difficulty modifier that fits. `+0`, `−20`, `−40`, and `−60` are useful reference values, not named tiers or mandatory increments.
-- The GM communicates the modifier or final TN before the player commits to the roll.
+- The GM chooses the Base TN before adding the character's abilities: Challenging 60, Heroic 40, or Extremely Heroic 25. Any value from 25 to 60 may represent a task between those points.
+- Opposition from an NPC is accounted for when choosing the Base TN rather than through an opposed roll.
+- The GM communicates the Base TN, every situational modifier, and the final TN before the player commits to the roll.
 - The player rolls `d100`. A result equal to or below the TN succeeds. A higher result fails.
 - `00` represents 100.
 
@@ -222,7 +223,8 @@ The game recommends playing through the return, report, consequences, and reward
 
 | Date | Decision | Status | Evidence/reason | Revisit when |
 |---|---|---|---|---|
-| 2026-08-30 | Outside-combat uncertainty uses a player-rolled d100 against two attributes, zero or one skill at five points per rank, a GM-set modifier, and stacking situational modifiers. | Provisional | Aligns with percentile combat math while allowing approaches to use different attributes and skills. | Representative characters and challenges are tested. |
+| 2026-08-30 | Outside-combat uncertainty uses a player-rolled d100 against two attributes, zero or one skill at five points per rank, a GM-set modifier, and stacking situational modifiers. | Superseded | Established the first general-check formula. Replaced by the Base TN decision below. | — |
+| 2026-08-31 | Every uncertain task begins with a Base TN: Challenging 60, Heroic 40, or Extremely Heroic 25, with intermediate values allowed. Add two attributes, zero or one skill at five points per rank, and stacking situational modifiers. | Provisional | Gives every challenge a positive baseline before character competence is applied and makes difficulty directly legible. | Representative characters and challenges are tested. |
 | 2026-08-30 | The GM calls for rolls only when both success and failure are possible and meaningful; competent routine action succeeds without rolling. | Provisional | Avoids low-value rolls and assumes professional adventuring competence. | Automatic success makes important tasks feel unearned or tables disagree about roll triggers. |
 | 2026-08-30 | Rolls are binary; after failure, either side may propose negotiated success with a twist. | Provisional | Keeps the die legible without losing flexible consequences. | Negotiation causes delays or creates inconsistent outcomes. |
 | 2026-08-30 | Only players roll outside optional random tables. | Provisional | Maintains a unified player-facing dice principle across the game. | NPC-initiated uncertainty becomes difficult to frame or assign. |

@@ -5,7 +5,9 @@
 })(typeof globalThis!=="undefined"?globalThis:this,function(){
 "use strict";
 
-const VERSION=1;
+const ENGINE_VERSION=2;
+const CHARACTER_SCHEMA_VERSION=1;
+const ADVENTURE_SCHEMA_VERSION=2;
 const ATTRIBUTES=["str","end","vit","mnd","agi","dex","int"];
 const NPC_PRESETS=["optimal_killer","self_preserving","dramatic_gm"];
 const ATTACK_KINDS=["attack","multi","push","persistent","rush"];
@@ -37,7 +39,7 @@ function validateAbility(ability,path,errors){
 function validateCharacter(character,path="character"){
   const errors=[];
   if(!isObject(character))return[error(path,"must be a JSON object")];
-  if(character.schemaVersion!==VERSION)errors.push(error(`${path}.schemaVersion`,`must be ${VERSION}`));
+  if(character.schemaVersion!==CHARACTER_SCHEMA_VERSION)errors.push(error(`${path}.schemaVersion`,`must be ${CHARACTER_SCHEMA_VERSION}`));
   if(character.kind!=="character")errors.push(error(`${path}.kind`,"must be character"));
   requireString(errors,character.id,`${path}.id`);requireString(errors,character.name,`${path}.name`);requireString(errors,character.role,`${path}.role`);
   if(!isObject(character.attributes))errors.push(error(`${path}.attributes`,"must be an object"));
@@ -80,7 +82,7 @@ function validateChoice(choice,path,errors,companionIds,clockIds){
     if(!isObject(choice.check))errors.push(error(`${path}.check`,"must be an object"));
     else{
       if(!Array.isArray(choice.check.attributes)||choice.check.attributes.length!==2||choice.check.attributes.some(x=>!ATTRIBUTES.includes(x)))errors.push(error(`${path}.check.attributes`,"must contain exactly two attribute ids"));
-      requireString(errors,choice.check.skill,`${path}.check.skill`);requireNumber(errors,choice.check.gmModifier,`${path}.check.gmModifier`);
+      requireString(errors,choice.check.skill,`${path}.check.skill`);requireNumber(errors,choice.check.baseTN,`${path}.check.baseTN`,25);if(Number.isFinite(choice.check.baseTN)&&choice.check.baseTN>60)errors.push(error(`${path}.check.baseTN`,"cannot exceed 60"));
       if(choice.check.situationalModifiers&&!Array.isArray(choice.check.situationalModifiers))errors.push(error(`${path}.check.situationalModifiers`,"must be an array"));
       if(choice.check.clock&&!clockIds.has(choice.check.clock))errors.push(error(`${path}.check.clock`,`references unknown clock ${choice.check.clock}`));
     }
@@ -119,7 +121,7 @@ function validateCombat(scene,path,errors,partyIds){
 function validateAdventure(adventure){
   const errors=[];
   if(!isObject(adventure))return[error("adventure","must be a JSON object")];
-  if(adventure.schemaVersion!==VERSION)errors.push(error("adventure.schemaVersion",`must be ${VERSION}`));
+  if(adventure.schemaVersion!==ADVENTURE_SCHEMA_VERSION)errors.push(error("adventure.schemaVersion",`must be ${ADVENTURE_SCHEMA_VERSION}`));
   if(adventure.kind!=="adventure")errors.push(error("adventure.kind","must be adventure"));
   requireString(errors,adventure.id,"adventure.id");requireString(errors,adventure.title,"adventure.title");requireString(errors,adventure.startScene,"adventure.startScene");
   if(!Array.isArray(adventure.party))errors.push(error("adventure.party","must be an array of companion characters"));
@@ -171,7 +173,7 @@ function createRun(mainCharacter,adventure,random=Math.random){
   if(characterErrors.length||adventureErrors.length)throw new Error([...characterErrors,...adventureErrors].join("\n"));
   const main=clone(mainCharacter),companions=clone(adventure.party);
   if(companions.some(x=>x.id===main.id))throw new Error(`The main character id ${main.id} conflicts with an adventure companion id.`);
-  const run={engineVersion:VERSION,runId:`run-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,adventure:clone(adventure),mainCharacterTemplate:clone(mainCharacter),mainCharacterId:main.id,characters:[main,...companions],sceneId:adventure.startScene,status:"playing",ending:null,world:{flags:clone(adventure.initialState?.flags||{}),counters:clone(adventure.initialState?.counters||{}),quest:{remainingDays:adventure.questDays??null,elapsedDays:0},clocks:initialClocks(adventure)},pendingTwist:null,combat:null,log:[],startedAt:new Date().toISOString()};
+  const run={engineVersion:ENGINE_VERSION,runId:`run-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,adventure:clone(adventure),mainCharacterTemplate:clone(mainCharacter),mainCharacterId:main.id,characters:[main,...companions],sceneId:adventure.startScene,status:"playing",ending:null,world:{flags:clone(adventure.initialState?.flags||{}),counters:clone(adventure.initialState?.counters||{}),quest:{remainingDays:adventure.questDays??null,elapsedDays:0},clocks:initialClocks(adventure)},pendingTwist:null,combat:null,log:[],startedAt:new Date().toISOString()};
   log(run,"run.started",`Started ${adventure.title} with ${main.name}.`,{adventureId:adventure.id,mainCharacterId:main.id});
   enterCurrentScene(run,random);
   return run;
@@ -179,6 +181,7 @@ function createRun(mainCharacter,adventure,random=Math.random){
 function enterCurrentScene(run,random=Math.random){
   const current=scene(run);if(!current)throw new Error(`Unknown scene ${run.sceneId}.`);
   log(run,"scene.entered",`Entered ${current.title}.`,{sceneId:run.sceneId,type:current.type});
+  if(current.type==="scene")for(const passage of current.text){if(typeof passage==="string")log(run,"story.narration",passage,{sceneId:run.sceneId});else log(run,passage.speaker?"story.dialogue":"story.narration",passage.text,{sceneId:run.sceneId,speaker:passage.speaker||null})}
   if(current.type==="ending"){run.status=current.outcome;run.ending={title:current.title,text:current.text||`Adventure ended in ${current.outcome}.`,outcome:current.outcome};log(run,"run.ended",run.ending.text,{outcome:current.outcome});}
   if(current.type==="combat")startCombat(run,current,random);
 }
@@ -214,7 +217,7 @@ function checkTotal(run,choice,actorId){
   const actor=character(run,actorId);if(!actor)throw new Error("The selected actor is not eligible.");
   const [first,second]=choice.check.attributes,skillRank=actor.skills[choice.check.skill]||0;
   const situational=(choice.check.situationalModifiers||[]).reduce((sum,item)=>sum+item.value,0);
-  return{tn:actor.attributes[first]+actor.attributes[second]+skillRank*5+choice.check.gmModifier+situational,first:first,second:second,skill:choice.check.skill,skillRank,gmModifier:choice.check.gmModifier,situationalModifiers:clone(choice.check.situationalModifiers||[])};
+  return{tn:choice.check.baseTN+actor.attributes[first]+actor.attributes[second]+skillRank*5+situational,baseTN:choice.check.baseTN,first:first,second:second,skill:choice.check.skill,skillRank,situationalModifiers:clone(choice.check.situationalModifiers||[])};
 }
 function setWorldPath(run,path,value,add=false){
   const parts=path.split(".");if(!["flags","counters","quest","clocks"].includes(parts[0])||parts.some(x=>["__proto__","constructor","prototype"].includes(x)))throw new Error(`Unsafe effect path ${path}.`);
@@ -602,5 +605,5 @@ function combatSummary(combat){
   return{round:combat.round,phase:combat.phase,criticalAvailable:combat.round===combat.nextCriticalRound&&!combat.criticalUsed,pending:clone(combat.pending),pcs:clone(combat.pcs),enemies:clone(combat.enemies),zones:clone(combat.zones),links:clone(combat.links),metrics:clone(combat.metrics)};
 }
 
-return{VERSION,ATTRIBUTES,NPC_PRESETS,validateCharacter,validateAdventure,createRun,scene,party,visibleChoices,choiceActors,checkTotal,resolveChoice,resolveTwist,combatSummary,distance,adjacent,legalAbilityTargets,beginPcTurn,resolveRallySustain,movePc,abandonTransit,performPcAbility,useConsumable,recover,availableInteractions,performInteraction,prepare,endPcTurn,useCritical,reactionOptions,resolveReaction:resolveReactionAndContinue,resolvePrepared,continueEnemyPhase,checkCombatEnd,clone,percentile,d6};
+return{VERSION:ENGINE_VERSION,ENGINE_VERSION,CHARACTER_SCHEMA_VERSION,ADVENTURE_SCHEMA_VERSION,ATTRIBUTES,NPC_PRESETS,validateCharacter,validateAdventure,createRun,scene,party,visibleChoices,choiceActors,checkTotal,resolveChoice,resolveTwist,combatSummary,distance,adjacent,legalAbilityTargets,beginPcTurn,resolveRallySustain,movePc,abandonTransit,performPcAbility,useConsumable,recover,availableInteractions,performInteraction,prepare,endPcTurn,useCritical,reactionOptions,resolveReaction:resolveReactionAndContinue,resolvePrepared,continueEnemyPhase,checkCombatEnd,clone,percentile,d6};
 });

@@ -20,11 +20,14 @@ At the start screen:
 
 The app does not include a playable adventure or main character. See [AUTHORING.md](AUTHORING.md) for both formats and a complete miniature example.
 
+Character files use schema version 1. Adventure files use schema version 2. Save slots from engine version 1 are rejected with an explicit unsupported-version message because their checks predate Base TN.
+
 ## What the first version supports
 
 - Scripted narration, dialogue, individual actions, and party decisions.
 - Fixed actors or player-selected eligible actors for checks.
-- Full disclosure of attributes, skill, modifiers, and final TN before rolling.
+- Full disclosure of Base TN, attributes, skill, modifiers, and final TN before rolling.
+- A visual-novel-style story stream that keeps narration, dialogue, choices, rolls, and outcomes in chronological order.
 - Automatic success or failure when the final TN is at least 100 or at most 0.
 - Author-marked no-roll outcomes.
 - Failed checks followed by the choice to keep failure or accept a vaguely previewed Success with a Twist.
