@@ -6,6 +6,7 @@
 
   const validateAdventure = core.validateAdventure;
   const createRun = core.createRun;
+  const performInteraction = core.performInteraction;
   const combatCountIssue = "adventure.scenes: must contain exactly one combat scene";
   const templateTextKeys = new Set(["title","text","speaker","label","description","reason","goal","approach","name","role","expression","twistPreview"]);
   const clone = value => JSON.parse(JSON.stringify(value));
@@ -17,13 +18,16 @@
     return value;
   }
 
-  function validateClockEffectReferences(adventure) {
-    const valid = new Set(Object.keys(adventure?.clocks || {}));
+  function validateExtraEffectReferences(adventure) {
+    const validClocks = new Set(Object.keys(adventure?.clocks || {}));
     const issues = [];
     function walk(value, path = "adventure.scenes") {
       if (!value || typeof value !== "object") return;
-      if (!Array.isArray(value) && value.type === "advance-clock" && !valid.has(value.id)) {
+      if (!Array.isArray(value) && value.type === "advance-clock" && !validClocks.has(value.id)) {
         issues.push(`${path}.id: unknown progress clock ${value.id || "(missing)"}`);
+      }
+      if (!Array.isArray(value) && value.type === "add" && (typeof value.value !== "number" || !Number.isFinite(value.value))) {
+        issues.push(`${path}.value: add effects require a finite numeric value`);
       }
       if (Array.isArray(value)) value.forEach((item, index) => walk(item, `${path}[${index}]`));
       else for (const [key, item] of Object.entries(value)) walk(item, `${path}.${key}`);
@@ -35,7 +39,7 @@
   function validateAdventureWithMultipleCombats(adventure) {
     return [
       ...validateAdventure(adventure).filter(issue => issue !== combatCountIssue),
-      ...validateClockEffectReferences(adventure)
+      ...validateExtraEffectReferences(adventure)
     ];
   }
 
@@ -100,4 +104,23 @@
     run.adventure = materializeAdventure(adventure, mainCharacter.name);
     return run;
   };
+
+  if (typeof performInteraction === "function") {
+    core.performInteraction = function performInteractionWithMainAlias(run, pcId, interactionId, random = Math.random) {
+      const interaction = run?.combat?.interactions?.find(item => item.id === interactionId);
+      if (!interaction) return performInteraction(run, pcId, interactionId, random);
+      const changed = [];
+      for (const effect of interaction.effects || []) {
+        if (effect.type === "move-unit" && effect.side === "pc" && effect.targetId === "$main") {
+          changed.push(effect);
+          effect.targetId = run.mainCharacterId;
+        }
+      }
+      try {
+        return performInteraction(run, pcId, interactionId, random);
+      } finally {
+        for (const effect of changed) effect.targetId = "$main";
+      }
+    };
+  }
 })();
