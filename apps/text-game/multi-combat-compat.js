@@ -9,6 +9,8 @@
   const performInteraction = core.performInteraction;
   const combatCountIssue = "adventure.scenes: must contain exactly one combat scene";
   const templateTextKeys = new Set(["title","text","speaker","label","description","reason","goal","approach","name","role","expression","twistPreview"]);
+  const writableRoots = new Set(["flags","counters","quest","clocks"]);
+  const unsafePathSegments = new Set(["__proto__","constructor","prototype"]);
   const clone = value => JSON.parse(JSON.stringify(value));
 
   function materializeAdventure(value, mainName, key = null) {
@@ -18,16 +20,31 @@
     return value;
   }
 
+  function validateStateEffectPath(effect, path, issues) {
+    if (effect.type !== "set" && effect.type !== "add") return;
+    if (typeof effect.path !== "string" || !effect.path.trim()) {
+      issues.push(`${path}.path: ${effect.type} effects require a writable state path`);
+      return;
+    }
+    const parts = effect.path.split(".");
+    if (!writableRoots.has(parts[0]) || parts.some(part => unsafePathSegments.has(part))) {
+      issues.push(`${path}.path: unsafe or unsupported state effect path ${effect.path}`);
+    }
+  }
+
   function validateExtraEffectReferences(adventure) {
     const validClocks = new Set(Object.keys(adventure?.clocks || {}));
     const issues = [];
     function walk(value, path = "adventure.scenes") {
       if (!value || typeof value !== "object") return;
-      if (!Array.isArray(value) && value.type === "advance-clock" && !validClocks.has(value.id)) {
-        issues.push(`${path}.id: unknown progress clock ${value.id || "(missing)"}`);
-      }
-      if (!Array.isArray(value) && value.type === "add" && (typeof value.value !== "number" || !Number.isFinite(value.value))) {
-        issues.push(`${path}.value: add effects require a finite numeric value`);
+      if (!Array.isArray(value)) {
+        validateStateEffectPath(value, path, issues);
+        if (value.type === "advance-clock" && !validClocks.has(value.id)) {
+          issues.push(`${path}.id: unknown progress clock ${value.id || "(missing)"}`);
+        }
+        if (value.type === "add" && (typeof value.value !== "number" || !Number.isFinite(value.value))) {
+          issues.push(`${path}.value: add effects require a finite numeric value`);
+        }
       }
       if (Array.isArray(value)) value.forEach((item, index) => walk(item, `${path}[${index}]`));
       else for (const [key, item] of Object.entries(value)) walk(item, `${path}.${key}`);
