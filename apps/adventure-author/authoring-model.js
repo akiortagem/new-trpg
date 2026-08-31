@@ -158,6 +158,15 @@
           scene.choices.forEach((choice,index)=>{
             if(!object(choice))return;
             const base=`scenes.${id}.choices[${index}]`;
+            if(choice.resolution==="check"){
+              if(!object(choice.actor))issues.push(`${base}.actor must be an object.`);
+              else if(choice.actor.eligible!=null&&!Array.isArray(choice.actor.eligible))issues.push(`${base}.actor.eligible must be an array when present.`);
+              if(!object(choice.check))issues.push(`${base}.check must be an object.`);
+              else{
+                if(choice.check.attributes!=null&&!Array.isArray(choice.check.attributes))issues.push(`${base}.check.attributes must be an array when present.`);
+                if(choice.check.situationalModifiers!=null)arrayOfObjects(choice.check.situationalModifiers,`${base}.check.situationalModifiers`);
+              }
+            }
             const outcomes=choice.resolution==="automatic"?[choice.outcome]:choice.resolution==="check"?[choice.success,choice.failure,choice.twist]:[];
             outcomes.forEach((outcome,outcomeIndex)=>{
               const name=choice.resolution==="automatic"?"outcome":["success","failure","twist"][outcomeIndex];
