@@ -190,6 +190,8 @@ Use `resolution: "automatic"` when the action requires no roll. This covers ordi
 
 The app does not infer automatic success from an ability name. The author decides that the defined effect resolves the task and marks the choice accordingly.
 
+When several choices belong to the same conversation or investigation, an outcome may set `next` to the id of its own scene. The app presents the choice and outcome text, applies its effects, and then returns directly to the scene's currently available choices. It does not repeat the scene title or opening passages. Use conditions and effects to hide questions that have already been asked or reveal new choices.
+
 ## Checks and actors
 
 A check choice names its acting character policy, Base TN, two attributes, one skill, and every distinct situational modifier. The interface discloses all of these and the final TN before the player commits.
