@@ -17,7 +17,7 @@ function combatScene(overrides={}){
 }
 function adventure(startScene="test",sceneOverrides={}){
   const ally=character("ally","Ally");
-  return{schemaVersion:1,kind:"adventure",id:"test-adventure",title:"Test Adventure",startScene,questDays:2,initialState:{flags:{warned:false},counters:{}},clocks:{search:{label:"Search",size:4}},party:[ally],scenes:{test:{type:"scene",title:"The Test",text:["Choose.",{speaker:"Ally",text:"I can read the trail."}],choices:[{id:"check",label:"Make the check",resolution:"check",actor:{mode:"select",eligible:["*"]},check:{goal:"Find the trail",approach:"Study the marks",baseTN:60,attributes:["int","dex"],skill:"Awareness",situationalModifiers:[],clock:"search"},success:outcome("The trail is found.","fight"),failure:outcome("The trail goes cold.","lost"),twistPreview:"The trail is found, but danger is warned.",twist:{text:"The trail is found after a lookout escapes.",next:"fight",effects:[{type:"set",path:"flags.warned",value:true}]}}]},fight:combatScene(),won:{type:"ending",title:"Won",outcome:"victory",text:"Victory."},lost:{type:"ending",title:"Lost",outcome:"defeat",text:"Defeat."},...sceneOverrides}};
+  return{schemaVersion:2,kind:"adventure",id:"test-adventure",title:"Test Adventure",startScene,questDays:2,initialState:{flags:{warned:false},counters:{}},clocks:{search:{label:"Search",size:4}},party:[ally],scenes:{test:{type:"scene",title:"The Test",text:["Choose.",{speaker:"Ally",text:"I can read the trail."}],choices:[{id:"check",label:"Make the check",resolution:"check",actor:{mode:"select",eligible:["*"]},check:{goal:"Find the trail",approach:"Study the marks",baseTN:60,attributes:["int","dex"],skill:"Awareness",situationalModifiers:[],clock:"search"},success:outcome("The trail is found.","fight"),failure:outcome("The trail goes cold.","lost"),twistPreview:"The trail is found, but danger is warned.",twist:{text:"The trail is found after a lookout escapes.",next:"fight",effects:[{type:"set",path:"flags.warned",value:true}]}}]},fight:combatScene(),won:{type:"ending",title:"Won",outcome:"victory",text:"Victory."},lost:{type:"ending",title:"Lost",outcome:"defeat",text:"Defeat."},...sceneOverrides}};
 }
 
 test("character and adventure schemas accept a complete valid pair",()=>{
@@ -58,6 +58,12 @@ test("natural 01–05 fills two progress-clock segments",()=>{
 test("checks require a Base TN from 25 to 60",()=>{
   const missing=adventure();delete missing.scenes.test.choices[0].check.baseTN;assert.ok(Core.validateAdventure(missing).some(x=>x.includes("check.baseTN")));
   const high=adventure();high.scenes.test.choices[0].check.baseTN=61;assert.ok(Core.validateAdventure(high).some(x=>x.includes("cannot exceed 60")));
+});
+
+test("Base TN uses a new adventure and save-engine version",()=>{
+  const legacy=adventure();legacy.schemaVersion=1;delete legacy.scenes.test.choices[0].check.baseTN;legacy.scenes.test.choices[0].check.gmModifier=0;
+  assert.equal(Core.CHARACTER_SCHEMA_VERSION,1);assert.equal(Core.ADVENTURE_SCHEMA_VERSION,2);assert.equal(Core.ENGINE_VERSION,2);
+  const errors=Core.validateAdventure(legacy);assert.ok(errors.some(x=>x.includes("schemaVersion: must be 2")));assert.ok(errors.some(x=>x.includes("check.baseTN")));
 });
 
 test("scene narration and character dialogue enter the chronological story stream",()=>{
