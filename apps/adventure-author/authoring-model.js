@@ -63,21 +63,14 @@
     return ability;
   }
 
-  function clockIds(adventure){
-    return Object.keys(adventure?.clocks||{});
-  }
-
-  function canUseAdvanceClock(adventure){
-    return clockIds(adventure).length>0;
-  }
+  function clockIds(adventure){return Object.keys(adventure?.clocks||{});}
+  function canUseAdvanceClock(adventure){return clockIds(adventure).length>0;}
 
   function clockEffectIssues(adventure){
     const valid=new Set(clockIds(adventure)),issues=[];
     function walk(value,path="adventure"){
       if(!value||typeof value!=="object")return;
-      if(!Array.isArray(value)&&value.type==="advance-clock"&&!valid.has(value.id)){
-        issues.push({path,id:value.id||"",message:`${path}: advance-clock references unknown clock ${value.id||"(missing)"}.`});
-      }
+      if(!Array.isArray(value)&&value.type==="advance-clock"&&!valid.has(value.id))issues.push({path,id:value.id||"",message:`${path}: advance-clock references unknown clock ${value.id||"(missing)"}.`});
       if(Array.isArray(value))value.forEach((child,index)=>walk(child,`${path}[${index}]`));
       else for(const [key,child] of Object.entries(value))walk(child,`${path}.${key}`);
     }
@@ -99,47 +92,83 @@
     if(!Array.isArray(links)||!links[index])return{ok:false,error:"Battlefield link not found."};
     const next={...links[index],...changes};
     if(!Number.isInteger(Number(next.cost))||Number(next.cost)<1)return{ok:false,error:"Move cost must be a positive whole number."};
-    next.cost=Number(next.cost);
-    links[index]=next;
-    return{ok:true,link:next};
+    next.cost=Number(next.cost);links[index]=next;return{ok:true,link:next};
   }
 
   function removeBattlefieldLink(scene,index){
     const links=scene?.battlefield?.links;
     if(!Array.isArray(links)||!links[index])return false;
-    links.splice(index,1);
-    return true;
+    links.splice(index,1);return true;
   }
 
   function openableShapeIssues(value){
     const issues=[];
     const object=v=>Boolean(v)&&typeof v==="object"&&!Array.isArray(v);
+    const arrayOfObjects=(items,path)=>{
+      if(!Array.isArray(items)){issues.push(`${path} must be an array.`);return false;}
+      items.forEach((item,index)=>{if(!object(item))issues.push(`${path}[${index}] must be an object.`);});
+      return true;
+    };
     if(!object(value))return["Adventure must be a JSON object."];
-    if(!Array.isArray(value.party))issues.push("party must be an array.");
+
+    if(arrayOfObjects(value.party,"party")){
+      for(const [index,member] of value.party.entries()){
+        if(!object(member))continue;
+        if(member.abilities!=null)arrayOfObjects(member.abilities,`party[${index}].abilities`);
+      }
+    }
+
     if(!object(value.initialState))issues.push("initialState must be an object.");
     else{
       if(!object(value.initialState.flags))issues.push("initialState.flags must be an object.");
       if(!object(value.initialState.counters))issues.push("initialState.counters must be an object.");
     }
+
     if(!object(value.clocks))issues.push("clocks must be an object.");
+    else for(const [id,clock] of Object.entries(value.clocks))if(!object(clock))issues.push(`clocks.${id} must be an object.`);
+
     if(!object(value.scenes))issues.push("scenes must be an object.");
     else for(const [id,scene] of Object.entries(value.scenes)){
       if(!object(scene)){issues.push(`scenes.${id} must be an object.`);continue;}
       if(scene.type==="scene"){
         if(!Array.isArray(scene.text))issues.push(`scenes.${id}.text must be an array.`);
-        if(!Array.isArray(scene.choices))issues.push(`scenes.${id}.choices must be an array.`);
+        else scene.text.forEach((passage,index)=>{if(typeof passage!=="string"&&!object(passage))issues.push(`scenes.${id}.text[${index}] must be narration text or a passage object.`);});
+        if(arrayOfObjects(scene.choices,`scenes.${id}.choices`)){
+          scene.choices.forEach((choice,index)=>{
+            if(!object(choice))return;
+            const base=`scenes.${id}.choices[${index}]`;
+            const outcomes=choice.resolution==="automatic"?[choice.outcome]:choice.resolution==="check"?[choice.success,choice.failure,choice.twist]:[];
+            outcomes.forEach((outcome,outcomeIndex)=>{
+              if(!object(outcome))issues.push(`${base}.${choice.resolution==="automatic"?"outcome":["success","failure","twist"][outcomeIndex]} must be an object.`);
+              else if(outcome.effects!=null)arrayOfObjects(outcome.effects,`${base}.${choice.resolution==="automatic"?"outcome":["success","failure","twist"][outcomeIndex]}.effects`);
+            });
+          });
+        }
       }
       if(scene.type==="combat"){
         if(!object(scene.battlefield))issues.push(`scenes.${id}.battlefield must be an object.`);
         else{
-          if(!Array.isArray(scene.battlefield.zones))issues.push(`scenes.${id}.battlefield.zones must be an array.`);
-          if(!Array.isArray(scene.battlefield.links))issues.push(`scenes.${id}.battlefield.links must be an array.`);
+          arrayOfObjects(scene.battlefield.zones,`scenes.${id}.battlefield.zones`);
+          arrayOfObjects(scene.battlefield.links,`scenes.${id}.battlefield.links`);
         }
         if(!object(scene.pcStarts))issues.push(`scenes.${id}.pcStarts must be an object.`);
-        if(!Array.isArray(scene.enemies))issues.push(`scenes.${id}.enemies must be an array.`);
-        if(scene.interactions!=null&&!Array.isArray(scene.interactions))issues.push(`scenes.${id}.interactions must be an array.`);
+        if(arrayOfObjects(scene.enemies,`scenes.${id}.enemies`)){
+          scene.enemies.forEach((enemy,index)=>{if(object(enemy)&&enemy.abilities!=null)arrayOfObjects(enemy.abilities,`scenes.${id}.enemies[${index}].abilities`);});
+        }
+        if(scene.interactions!=null&&arrayOfObjects(scene.interactions,`scenes.${id}.interactions`)){
+          scene.interactions.forEach((interaction,index)=>{if(object(interaction)&&interaction.effects!=null)arrayOfObjects(interaction.effects,`scenes.${id}.interactions[${index}].effects`);});
+        }
+        for(const [name,outcome] of [["victory",scene.victory],["defeat",scene.defeat]]){
+          if(!object(outcome))issues.push(`scenes.${id}.${name} must be an object.`);
+          else if(outcome.effects!=null)arrayOfObjects(outcome.effects,`scenes.${id}.${name}.effects`);
+        }
+        if(scene.editor!=null){
+          if(!object(scene.editor))issues.push(`scenes.${id}.editor must be an object when present.`);
+          else if(scene.editor.zones!=null&&!object(scene.editor.zones))issues.push(`scenes.${id}.editor.zones must be an object when present.`);
+        }
       }
     }
+
     if(value.editor!=null){
       if(!object(value.editor))issues.push("editor must be an object when present.");
       else if(value.editor.nodes!=null&&!object(value.editor.nodes))issues.push("editor.nodes must be an object when present.");
@@ -151,17 +180,15 @@
     const issues=[];
     function walk(value,path="adventure.scenes"){
       if(!value||typeof value!=="object")return;
-      if(!Array.isArray(value)&&value.type==="add"&&(typeof value.value!=="number"||!Number.isFinite(value.value))){
-        issues.push({path,message:`${path}.value: add effects require a finite numeric value.`});
-      }
+      if(!Array.isArray(value)&&value.type==="add"&&(typeof value.value!=="number"||!Number.isFinite(value.value)))issues.push({path,message:`${path}.value: add effects require a finite numeric value.`});
       if(Array.isArray(value))value.forEach((child,index)=>walk(child,`${path}[${index}]`));
       else for(const [key,child] of Object.entries(value))walk(child,`${path}.${key}`);
     }
-    walk(adventure?.scenes||{});
-    return issues;
+    walk(adventure?.scenes||{});return issues;
   }
 
   function parseAddEffectValue(value){
+    if(typeof value==="string"&&!value.trim())return{ok:false,error:"Add effect value must be a number."};
     const n=Number(value);
     return Number.isFinite(n)?{ok:true,value:n}:{ok:false,error:"Add effect value must be a number."};
   }
