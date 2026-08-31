@@ -11,6 +11,7 @@ const ADVENTURE_SCHEMA_VERSION=2;
 const ATTRIBUTES=["str","end","vit","mnd","agi","dex","int"];
 const NPC_PRESETS=["optimal_killer","self_preserving","dramatic_gm"];
 const ATTACK_KINDS=["attack","multi","push","persistent","rush"];
+const TEMPLATE_TEXT_KEYS=new Set(["title","text","speaker","label","description","reason","goal","approach","name","role","expression","twistPreview"]);
 const clone=value=>JSON.parse(JSON.stringify(value));
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
 const percentile=(random=Math.random)=>Math.floor(random()*100)+1;
@@ -21,6 +22,12 @@ const isObject=value=>Boolean(value)&&typeof value==="object"&&!Array.isArray(va
 function error(path,message){return `${path}: ${message}`}
 function requireString(errors,value,path){if(typeof value!=="string"||!value.trim())errors.push(error(path,"must be a non-empty string"))}
 function requireNumber(errors,value,path,min=null){if(typeof value!=="number"||!Number.isFinite(value)||(min!==null&&value<min))errors.push(error(path,`must be a number${min===null?"":` of at least ${min}`}`))}
+function materializeAdventure(value,mainName,key=null){
+  if(typeof value==="string")return TEMPLATE_TEXT_KEYS.has(key)?value.replace(/\{\{\s*main\.name\s*\}\}/g,()=>mainName):value;
+  if(Array.isArray(value))return value.map(item=>materializeAdventure(item,mainName,key));
+  if(isObject(value))return Object.fromEntries(Object.entries(value).map(([childKey,item])=>[childKey,materializeAdventure(item,mainName,childKey)]));
+  return value;
+}
 
 function validateAbility(ability,path,errors){
   if(!isObject(ability)){errors.push(error(path,"must be an object"));return}
@@ -171,10 +178,10 @@ function initialClocks(adventure){
 function createRun(mainCharacter,adventure,random=Math.random){
   const characterErrors=validateCharacter(mainCharacter),adventureErrors=validateAdventure(adventure);
   if(characterErrors.length||adventureErrors.length)throw new Error([...characterErrors,...adventureErrors].join("\n"));
-  const main=clone(mainCharacter),companions=clone(adventure.party);
+  const main=clone(mainCharacter),preparedAdventure=materializeAdventure(adventure,main.name),companions=clone(preparedAdventure.party);
   if(companions.some(x=>x.id===main.id))throw new Error(`The main character id ${main.id} conflicts with an adventure companion id.`);
-  const run={engineVersion:ENGINE_VERSION,runId:`run-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,adventure:clone(adventure),mainCharacterTemplate:clone(mainCharacter),mainCharacterId:main.id,characters:[main,...companions],sceneId:adventure.startScene,status:"playing",ending:null,world:{flags:clone(adventure.initialState?.flags||{}),counters:clone(adventure.initialState?.counters||{}),quest:{remainingDays:adventure.questDays??null,elapsedDays:0},clocks:initialClocks(adventure)},pendingTwist:null,combat:null,log:[],startedAt:new Date().toISOString()};
-  log(run,"run.started",`Started ${adventure.title} with ${main.name}.`,{adventureId:adventure.id,mainCharacterId:main.id});
+  const run={engineVersion:ENGINE_VERSION,runId:`run-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,adventure:preparedAdventure,mainCharacterTemplate:clone(mainCharacter),mainCharacterId:main.id,characters:[main,...companions],sceneId:preparedAdventure.startScene,status:"playing",ending:null,world:{flags:clone(preparedAdventure.initialState?.flags||{}),counters:clone(preparedAdventure.initialState?.counters||{}),quest:{remainingDays:preparedAdventure.questDays??null,elapsedDays:0},clocks:initialClocks(preparedAdventure)},pendingTwist:null,combat:null,log:[],startedAt:new Date().toISOString()};
+  log(run,"run.started",`Started ${preparedAdventure.title} with ${main.name}.`,{adventureId:preparedAdventure.id,mainCharacterId:main.id});
   enterCurrentScene(run,random);
   return run;
 }
