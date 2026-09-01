@@ -187,7 +187,8 @@
       else enemyDefinitionIds.add(enemy.id);
       if (typeof enemy.name!=="string"||!enemy.name.trim()) issues.push(`${path}.name: must be a non-empty string`);
       if (!new Set(["optimal_killer","self_preserving","dramatic_gm"]).has(enemy.preset)) issues.push(`${path}.preset: must be a supported NPC preset`);
-      for(const key of ["hp","maxAp","atk","def","dodge","threat","stamina","mana"])if(!isFiniteNumber(enemy[key])||enemy[key]<0)issues.push(`${path}.${key}: must be a nonnegative finite number`);
+      for(const key of ["hp","maxAp","atk","def","dodge","threat"])if(!isFiniteNumber(enemy[key])||enemy[key]<0)issues.push(`${path}.${key}: must be a nonnegative finite number`);
+      for(const key of ["stamina","mana"])if(enemy[key]!=null&&(!isFiniteNumber(enemy[key])||enemy[key]<0))issues.push(`${path}.${key}: must be a nonnegative finite number when present`);
       if(!Array.isArray(enemy.abilities)||!enemy.abilities.length)issues.push(`${path}.abilities: must contain at least one ability`);
       else enemy.abilities.forEach((ability,abilityIndex)=>validateAbilityExtras(ability,`${path}.abilities[${abilityIndex}]`,issues));
     }

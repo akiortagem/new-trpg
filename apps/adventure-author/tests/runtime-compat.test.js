@@ -61,6 +61,23 @@ test("runtime rejects combat placements with missing enemy NPC references",()=>{
   assert.throws(()=>Core.createRun(character(),value,()=>0.5),/unknown enemy NPC missing/);
 });
 
+test("migrated legacy enemies may omit stamina and mana",()=>{
+  const value=Model.createAdventureDraft("legacy-resources","Legacy Resources",1);
+  value.scenes.start.choices[0].outcome={text:"Fight",next:"fight"};
+  value.scenes.fight=combat("fight");
+  delete value.scenes.fight.enemies[0].stamina;
+  delete value.scenes.fight.enemies[0].mana;
+  delete value.enemies;
+  Model.migrateEnemyCatalog(value);
+  assert.equal(value.enemies[0].stamina,undefined);
+  assert.equal(value.enemies[0].mana,undefined);
+  assert.deepEqual(Core.validateAdventure(value),[]);
+  const run=Core.createRun(character(),value,()=>0.5);
+  Core.resolveChoice(run,"continue",undefined,()=>0.5);
+  assert.equal(run.combat.enemies[0].stamina,0);
+  assert.equal(run.combat.enemies[0].mana,0);
+});
+
 test("runtime validation rejects advance-clock outcomes that reference no authored clock",()=>{
   const value=Model.createAdventureDraft("bad-clock","Bad Clock",1);
   value.scenes.start.choices[0].outcome.effects=[{type:"advance-clock",id:"clock",segments:1}];

@@ -170,7 +170,21 @@ Enemy NPC definitions are stored in the top-level `enemies` array:
     "def": 5,
     "dodge": 30,
     "threat": 30,
-    "abilities": []
+    "abilities": [
+      {
+        "id": "strike",
+        "name": "Strike",
+        "kind": "attack",
+        "ap": 1,
+        "stamina": 0,
+        "mana": 0,
+        "power": 40,
+        "minRange": 0,
+        "maxRange": 0,
+        "attackBonus": 25,
+        "tags": ["Physical"]
+      }
+    ]
   }
 ]
 ```
