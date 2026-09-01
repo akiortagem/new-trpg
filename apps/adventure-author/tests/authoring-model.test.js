@@ -207,3 +207,18 @@ test("add effects require finite numeric values",()=>{
   value.scenes.start.choices[0].outcome.effects[0].value=2;
   assert.deepEqual(Model.numericAddEffectIssues(value),[]);
 });
+
+test("graph connections replace direct endings and can be disconnected",()=>{
+  const outcome={text:"Continue",end:"victory"};
+  assert.deepEqual(Model.connectOutcome(outcome,"next-scene"),{ok:true,next:"next-scene"});
+  assert.deepEqual(outcome,{text:"Continue",next:"next-scene"});
+  assert.equal(Model.disconnectOutcome(outcome),true);
+  assert.deepEqual(outcome,{text:"Continue"});
+  assert.equal(Model.disconnectOutcome(outcome),false);
+});
+
+test("graph connections reject a missing destination without mutation",()=>{
+  const outcome={text:"Continue",next:"existing"};
+  assert.equal(Model.connectOutcome(outcome,"  ").ok,false);
+  assert.deepEqual(outcome,{text:"Continue",next:"existing"});
+});
