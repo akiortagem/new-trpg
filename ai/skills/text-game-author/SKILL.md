@@ -20,8 +20,52 @@ You are authoring content for a browser-based, zero-network, no-AI-GM adventure 
 ## Before You Start
 
 1. **Re-read `AUTHORING.md`** every time. The format evolves. Do not rely solely on this skill.
-2. **Interview the user** before writing. Gather: setting, tone, party size, quest type, combat style, companion details, themes, scope expectations.
+2. **Run the Preference Interview** (mandatory — see the next section). Never author, or even plan, an adventure without it, even when the user's prompt is detailed.
 3. **Plan with TodoWrite**. Break the work into: character file(s), adventure structure, scene-by-scene writing, validation, testing.
+
+## Preference Interview (Mandatory)
+
+The interview has three phases: **Round 1**, **Round 2**, and **Spec Confirmation**. Do not write any JSON until the user has confirmed the spec.
+
+### Round 1: Core Questions
+
+Ask 4–6 questions in a single batched question call — roughly one per major topic. All six topics must be covered exactly once across the interview:
+
+1. **Core concept** — setting, premise/hook, tone.
+2. **Structure & scope** — scene count, playtime, number of endings, branching density.
+3. **Party & companions** — party size, companion count, companion personalities/roles.
+4. **Combat** — difficulty, enemy types, battlefield complexity, avoidable or not.
+5. **Skill checks** — frequency, featured skills, twist usage.
+6. **Content boundaries** — themes to include/avoid, maturity level, humor yes/no.
+
+**Confirm, don't re-ask.** If the initial prompt already answers a topic ("write a dark fantasy heist, 2 companions, brutal combat"), restate that answer as the question's pre-filled default and ask the user to confirm or amend it. Never ask as if you hadn't read the prompt.
+
+Example Round 1 script (adapt options to the prompt and to the Design Guidelines defaults):
+
+- **Setting & tone?** e.g., Low-fantasy frontier, grim and grounded (default) / High fantasy / Dark gothic / Other
+- **Scope?** e.g., Short: 6–8 scenes / Standard: 12–15 scenes, 1–2 hours (default) / Long: 20+ scenes
+- **Companions?** e.g., None (solo) / One companion / Two companions (default for rich dialogue)
+- **Combat?** e.g., One standard fight (default) / Tactical setpiece with interactions / Avoidable via checks
+- **Skill checks?** e.g., Few: 2–3 / Standard: 4–5 (default) / Many: 6+
+- **Content boundaries?** e.g., Keep it clean (default) / Dark themes OK / Humor allowed
+
+### Round 2: Adaptive Follow-Ups
+
+Round 2 has no fixed script — its questions are driven by Round 1 answers. Ask 4–6 follow-ups that go deeper where Round 1 left choices open. Examples:
+
+- Companions chosen → role, personality, and speech pattern for each; whether the user wants to define them or leave them to the agent.
+- Combat-heavy → enemy faction/type, battlefield gimmicks or interactions, whether defeat is a real ending.
+- Dark themes allowed → which themes specifically, and any hard no's.
+- Long scope → number of endings, whether progress clocks should be used.
+- Custom/featured skills mentioned → which checks should showcase them.
+
+If Round 1 answers were complete and unambiguous, Round 2 may be shorter — but never skip it entirely.
+
+### Spec Confirmation
+
+After Round 2, summarize the gathered preferences as a written spec **in the conversation** and ask the user to confirm it. Cover: premise, tone, scope targets, party roster, combat plan, skill-check plan, and content boundaries. Do not write the spec to a file — it lives in chat only.
+
+Only after the user confirms the spec: plan with TodoWrite, then author.
 
 ## Character File Format (schemaVersion: 1)
 
@@ -436,6 +480,7 @@ node --test tests/text-game.test.js
 
 Before delivering:
 
+- [ ] Preference Interview completed (both rounds) and spec confirmed by the user
 - [ ] Works with any valid main-character file; refers to MC only as `$main` / `{{main.name}}`
 - [ ] Every companion has a unique ID and complete character definition
 - [ ] Every certain action is explicitly `automatic` with a `reason`
