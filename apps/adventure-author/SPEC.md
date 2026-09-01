@@ -47,7 +47,9 @@ Edges are derived from runtime `next` fields:
 - check: success, failure, twist outputs;
 - combat: victory and defeat outputs.
 
-Choosing an Ending destination writes `next` to the ending scene id rather than inventing a separate editor-only ending reference.
+Each node has an input port, and each authored outcome has its own output port. Authors connect nodes by dragging a wire from an outcome's output port to the destination node's input port. Dropping a connected output onto another input rewires that outcome. The inspector reports the current destination and can disconnect it, but it does not provide an alternate node selector.
+
+Connecting an Ending node writes `next` to the ending scene id rather than inventing a separate editor-only ending reference. Existing direct `end` outcomes remain readable and can be disconnected or replaced by a graph connection.
 
 ### Layout metadata
 
@@ -89,7 +91,7 @@ Common:
 - description;
 - visibility condition builder;
 - outcomes and structured effects;
-- destination node selectors.
+- current destination display and disconnect action; new destinations are wired on the graph.
 
 Automatic choice:
 

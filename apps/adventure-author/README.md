@@ -4,6 +4,8 @@ Visual authoring tool for adventure JSON consumed by `../text-game`.
 
 Open `index.html` through the same static server used for the repository apps. The editor supports creating and opening adventures, graph-based scene flow, structured scene/check editing, state and clocks, combat battlefields, enemy ability templates, validation, raw JSON editing, undo/redo, and direct file overwrite through the browser File System Access API when available.
 
+To connect nodes, drag an outcome's output port to the input port on another node. Dragging an already connected output rewires it; use **Disconnect** beside the outcome in the inspector to remove its current destination.
+
 ## File behavior
 
 - `$main` is not embedded; the text-game player selects it when starting a run.
