@@ -26,6 +26,7 @@
       <button data-add="ending">+ Ending</button>
       <hr>
       <button id="metaBtn">Adventure</button>
+      <button id="enemiesBtn">Enemies</button>
       <button id="stateBtn">State & Clocks</button>
       <button id="validateBtn">Validation</button>
     </aside>
@@ -66,6 +67,19 @@
       <div class="battlefield-layout">
         <section class="battlefield-canvas-wrap"><svg id="battleEdges" class="edges"></svg><div id="battleCanvas" class="canvas battle-canvas"></div></section>
         <aside id="battleInspector" class="battle-inspector"></aside>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="enemiesDialog">
+    <div class="dialog-card enemies-dialog">
+      <div class="dialog-title-row"><h2>Enemy NPCs</h2><button id="closeEnemiesBtn">Close</button></div>
+      <div class="enemies-layout">
+        <aside class="enemy-list-panel">
+          <button id="addEnemyDefinition">+ Enemy NPC</button>
+          <div id="enemyDefinitionList" class="stack"></div>
+        </aside>
+        <section id="enemyDefinitionEditor" class="enemy-definition-editor"></section>
       </div>
     </div>
   </dialog>

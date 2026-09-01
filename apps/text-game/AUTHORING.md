@@ -325,7 +325,7 @@ Use conditional choices to change scenes when a clock is complete:
 
 ## Combat scenes
 
-A combat scene defines a zone network, the starting zone for every PC, enemies, and binary outcomes.
+A combat scene defines a zone network, the starting zone for every PC, enemy placements, and binary outcomes.
 
 ```json
 {
@@ -359,14 +359,13 @@ A combat scene defines a zone network, the starting zone for every PC, enemies, 
 
 Every companion id must appear in `pcStarts`, along with `$main`. A connection's `cost` is its number of Moves. Progress across a long connection persists between rounds. A combatant partway across is in transit, cannot use ordinary abilities or reactions, and may continue or abandon the crossing on their turn.
 
-An enemy supplies finished combat statistics, abilities, and one deterministic preset:
+Enemy NPCs are defined once in the adventure's top-level `enemies` array. A definition supplies finished combat statistics, abilities, and one deterministic preset. It has no starting zone:
 
 ```json
 {
-  "id": "raider-1",
+  "id": "road-raider",
   "name": "Road Raider",
   "preset": "optimal_killer",
-  "zone": "ridge",
   "hp": 120,
   "maxAp": 2,
   "atk": 40,
@@ -389,6 +388,17 @@ An enemy supplies finished combat statistics, abilities, and one deterministic p
   ]
 }
 ```
+
+A combat scene refers to a definition through a placement. The placement's `id` identifies this combatant during the encounter and in interaction effects. Its `enemyId` selects the shared definition:
+
+```json
+"enemies": [
+  { "id": "raider-1", "enemyId": "road-raider", "zone": "ridge" },
+  { "id": "raider-2", "enemyId": "road-raider", "zone": "ridge" }
+]
+```
+
+Each placement receives independent HP, resources, conditions, and turns at runtime.
 
 The presets contain no randomness and make no network request:
 
@@ -461,6 +471,24 @@ The following file is a format example, not an included playable adventure. It c
       "combat": { "hp": 250, "stamina": 15, "mana": 0, "inventoryPoints": 3, "maxAp": 3, "def": 15, "defenseBonus": 45 },
       "abilities": [
         { "id": "bow-shot", "name": "Bow Shot", "kind": "attack", "ap": 1, "stamina": 0, "mana": 0, "power": 50, "minRange": 0, "maxRange": 1, "attackBonus": 45, "tags": ["Physical", "arrow"] }
+      ]
+    }
+  ],
+  "enemies": [
+    {
+      "id": "road-raider",
+      "name": "Road Raider",
+      "preset": "optimal_killer",
+      "hp": 120,
+      "stamina": 0,
+      "mana": 0,
+      "maxAp": 2,
+      "atk": 40,
+      "def": 5,
+      "dodge": 30,
+      "threat": 25,
+      "abilities": [
+        { "id": "strike", "name": "Strike", "kind": "attack", "ap": 1, "stamina": 0, "mana": 0, "power": 40, "minRange": 0, "maxRange": 0, "attackBonus": 0, "tags": ["Physical"] }
       ]
     }
   ],
@@ -537,21 +565,7 @@ The following file is a format example, not an included playable adventure. It c
       },
       "pcStarts": { "$main": "road", "toma": "road" },
       "enemies": [
-        {
-          "id": "raider-1",
-          "name": "Road Raider",
-          "preset": "optimal_killer",
-          "zone": "ridge",
-          "hp": 120,
-          "maxAp": 2,
-          "atk": 40,
-          "def": 5,
-          "dodge": 30,
-          "threat": 25,
-          "abilities": [
-            { "id": "strike", "name": "Strike", "kind": "attack", "ap": 1, "stamina": 0, "mana": 0, "power": 40, "minRange": 0, "maxRange": 0, "tags": ["Physical"] }
-          ]
-        }
+        { "id": "raider-1", "enemyId": "road-raider", "zone": "ridge" }
       ],
       "victory": { "text": "The raider breaks and the road is safe again.", "next": "return" },
       "defeat": { "text": "The party is overwhelmed on the ridge road.", "next": "lost" }

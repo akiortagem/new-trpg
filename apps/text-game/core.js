@@ -97,7 +97,14 @@ function validateChoice(choice,path,errors,companionIds,clockIds){
     requireString(errors,choice.twistPreview,`${path}.twistPreview`);
   }
 }
-function validateCombat(scene,path,errors,partyIds){
+function validateEnemyDefinition(enemy,path,errors){
+  requireString(errors,enemy.id,`${path}.id`);requireString(errors,enemy.name,`${path}.name`);
+  if(!NPC_PRESETS.includes(enemy.preset))errors.push(error(`${path}.preset`,`must be one of ${NPC_PRESETS.join(", ")}`));
+  for(const key of ["hp","maxAp","atk","def","dodge","threat"])requireNumber(errors,enemy[key],`${path}.${key}`,0);
+  if(!Array.isArray(enemy.abilities)||!enemy.abilities.length)errors.push(error(`${path}.abilities`,"must contain at least one ability"));
+  else enemy.abilities.forEach((ability,aIndex)=>validateAbility({...ability,attackBonus:ability.attackBonus??0},`${path}.abilities[${aIndex}]`,errors));
+}
+function validateCombat(scene,path,errors,partyIds,enemyDefinitions=new Map()){
   if(!isObject(scene.battlefield)){errors.push(error(`${path}.battlefield`,"must be an object"));return}
   const zones=scene.battlefield.zones;
   if(!Array.isArray(zones)||!zones.length)errors.push(error(`${path}.battlefield.zones`,"must contain zones"));
@@ -111,12 +118,10 @@ function validateCombat(scene,path,errors,partyIds){
   else for(const id of partyIds)if(!zoneIds.has(scene.pcStarts[id]))errors.push(error(`${path}.pcStarts.${id}`,"must reference a battlefield zone"));
   if(!Array.isArray(scene.enemies)||!scene.enemies.length)errors.push(error(`${path}.enemies`,"must contain at least one enemy"));
   for(const [index,enemy] of (scene.enemies||[]).entries()){
-    const ep=`${path}.enemies[${index}]`;requireString(errors,enemy.id,`${ep}.id`);requireString(errors,enemy.name,`${ep}.name`);
-    if(!NPC_PRESETS.includes(enemy.preset))errors.push(error(`${ep}.preset`,`must be one of ${NPC_PRESETS.join(", ")}`));
+    const ep=`${path}.enemies[${index}]`;requireString(errors,enemy.id,`${ep}.id`);
     if(!zoneIds.has(enemy.zone))errors.push(error(`${ep}.zone`,"must reference a battlefield zone"));
-    for(const key of ["hp","maxAp","atk","def","dodge","threat"])requireNumber(errors,enemy[key],`${ep}.${key}`,0);
-    if(!Array.isArray(enemy.abilities)||!enemy.abilities.length)errors.push(error(`${ep}.abilities`,"must contain at least one ability"));
-    else enemy.abilities.forEach((ability,aIndex)=>validateAbility({...ability,attackBonus:ability.attackBonus??0},`${ep}.abilities[${aIndex}]`,errors));
+    if(enemy.enemyId){requireString(errors,enemy.enemyId,`${ep}.enemyId`);if(!enemyDefinitions.has(enemy.enemyId))errors.push(error(`${ep}.enemyId`,`references unknown enemy NPC ${enemy.enemyId}`));}
+    else validateEnemyDefinition(enemy,ep,errors);
   }
   const enemyIds=(scene.enemies||[]).map(x=>x.id);if(new Set(enemyIds).size!==enemyIds.length)errors.push(error(`${path}.enemies`,"enemy ids must be unique"));
   for(const [index,interaction] of (scene.interactions||[]).entries()){
@@ -137,6 +142,12 @@ function validateAdventure(adventure){
     validateCharacter(character,`adventure.party[${index}]`).forEach(x=>errors.push(x));
     if(character?.id){if(character.id==="$main")errors.push(error(`adventure.party[${index}].id`,"is reserved for the selected main character"));if(companionIds.has(character.id))errors.push(error("adventure.party","companion ids must be unique"));companionIds.add(character.id)}
   }
+  const enemyDefinitions=new Map();
+  if(adventure.enemies!=null&&!Array.isArray(adventure.enemies))errors.push(error("adventure.enemies","must be an array of enemy NPCs"));
+  for(const [index,enemy] of (adventure.enemies||[]).entries()){
+    validateEnemyDefinition(enemy,`adventure.enemies[${index}]`,errors);
+    if(enemy?.id){if(enemyDefinitions.has(enemy.id))errors.push(error("adventure.enemies","enemy NPC ids must be unique"));else enemyDefinitions.set(enemy.id,enemy)}
+  }
   const clockIds=new Set(Object.keys(adventure.clocks||{}));for(const [id,clock] of Object.entries(adventure.clocks||{})){requireString(errors,clock.label,`adventure.clocks.${id}.label`);if(![2,4,6].includes(clock.size))errors.push(error(`adventure.clocks.${id}.size`,"must be 2, 4, or 6"))}
   if(!isObject(adventure.scenes))errors.push(error("adventure.scenes","must be an object keyed by scene id"));
   const scenes=adventure.scenes||{};
@@ -151,7 +162,7 @@ function validateAdventure(adventure){
       if(!Array.isArray(scene.choices)||!scene.choices.length)errors.push(error(`${path}.choices`,"must contain at least one choice"));
       (scene.choices||[]).forEach((choice,index)=>validateChoice(choice,`${path}.choices[${index}]`,errors,companionIds,clockIds));const choiceIds=(scene.choices||[]).map(x=>x.id);if(new Set(choiceIds).size!==choiceIds.length)errors.push(error(`${path}.choices`,"choice ids must be unique within a scene"));
     }
-    if(scene.type==="combat"){combatCount++;validateCombat(scene,path,errors,new Set(["$main",...companionIds]))}
+    if(scene.type==="combat"){combatCount++;validateCombat(scene,path,errors,new Set(["$main",...companionIds]),enemyDefinitions)}
     if(scene.type==="ending"&&!['victory','defeat'].includes(scene.outcome))errors.push(error(`${path}.outcome`,"must be victory or defeat"));
   }
   if(combatCount!==1)errors.push(error("adventure.scenes","must contain exactly one combat scene"));
@@ -287,7 +298,9 @@ function combatantFromEnemy(source){
 function startCombat(run,combatScene,random=Math.random){
   const pcs=run.characters.map(source=>combatantFromCharacter(source,combatScene.pcStarts[source.id]||combatScene.pcStarts.$main));
   const nextCriticalRound=d6(random),ambush=Boolean(combatScene.ambush);
-  run.combat={sceneId:run.sceneId,name:combatScene.title,round:1,phase:ambush?"enemy":"pc",ambush,ambushEnemyPhaseComplete:false,zones:clone(combatScene.battlefield.zones),links:clone(combatScene.battlefield.links),interactions:clone(combatScene.interactions||[]),pcs,enemies:combatScene.enemies.map(combatantFromEnemy),selectedPcId:null,nextCriticalRound,criticalUsed:false,criticalArmed:null,enemyIndex:0,pending:null,queued:null,metrics:{rounds:1,pcAttacks:0,npcAttacks:0,npcDefenseRolls:0,pcDefenseRolls:0,noRollAttacks:0,moves:0,protects:0,prepared:0,criticalUses:0,apExpired:0,abilityUses:{}},log:[]};
+  const enemyDefinitions=new Map((run.adventure.enemies||[]).map(enemy=>[enemy.id,enemy]));
+  const enemies=combatScene.enemies.map(placement=>placement.enemyId?{...clone(enemyDefinitions.get(placement.enemyId)),id:placement.id,zone:placement.zone}:placement).map(combatantFromEnemy);
+  run.combat={sceneId:run.sceneId,name:combatScene.title,round:1,phase:ambush?"enemy":"pc",ambush,ambushEnemyPhaseComplete:false,zones:clone(combatScene.battlefield.zones),links:clone(combatScene.battlefield.links),interactions:clone(combatScene.interactions||[]),pcs,enemies,selectedPcId:null,nextCriticalRound,criticalUsed:false,criticalArmed:null,enemyIndex:0,pending:null,queued:null,metrics:{rounds:1,pcAttacks:0,npcAttacks:0,npcDefenseRolls:0,pcDefenseRolls:0,noRollAttacks:0,moves:0,protects:0,prepared:0,criticalUses:0,apExpired:0,abilityUses:{}},log:[]};
   combatLog(run,"combat.started",`${combatScene.title} begins. ${ambush?"Enemies":"PCs"} act first.`,{ambush,nextCriticalRound});
   combatLog(run,"critical.scheduled",`The first Critical Round is round ${nextCriticalRound}.`,{nextCriticalRound});
   if(ambush)continueEnemyPhase(run,random);

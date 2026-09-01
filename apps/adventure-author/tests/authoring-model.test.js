@@ -16,6 +16,28 @@ test("new adventure drafts start with a valid routable choice",()=>{
   assert.equal(value.scenes.start.choices.length,1);
   assert.equal(value.scenes.start.choices[0].id,"continue");
   assert.equal(value.scenes.start.choices[0].outcome.end,"victory");
+  assert.deepEqual(value.enemies,[]);
+});
+
+test("legacy combat enemies migrate to adventure-level NPCs and placements",()=>{
+  const value=Model.createAdventureDraft("migration","Migration",1);
+  value.scenes.fight={type:"combat",battlefield:{zones:[{id:"yard"}],links:[]},enemies:[{id:"bandit",name:"Bandit",zone:"yard",hp:50,abilities:[]}]};
+  delete value.enemies;
+  Model.migrateEnemyCatalog(value);
+  assert.deepEqual(value.enemies,[{id:"bandit",name:"Bandit",hp:50,abilities:[]}]);
+  assert.deepEqual(value.scenes.fight.enemies,[{id:"bandit",enemyId:"bandit",zone:"yard"}]);
+  assert.equal(Model.enemyDefinition(value,value.scenes.fight.enemies[0]).name,"Bandit");
+  assert.equal(Model.enemyReferenceCount(value,"bandit"),1);
+});
+
+test("legacy enemies with colliding ids receive distinct catalogue ids",()=>{
+  const value=Model.createAdventureDraft("migration","Migration",1);
+  delete value.enemies;
+  value.scenes.one={type:"combat",enemies:[{id:"guard",name:"First",zone:"one"}]};
+  value.scenes.two={type:"combat",enemies:[{id:"guard",name:"Second",zone:"two"}]};
+  Model.migrateEnemyCatalog(value);
+  assert.deepEqual(value.enemies.map(enemy=>enemy.id),["guard","guard-2"]);
+  assert.deepEqual([value.scenes.one.enemies[0].enemyId,value.scenes.two.enemies[0].enemyId],["guard","guard-2"]);
 });
 
 test("wizard draft validation rejects missing required fields and negative days",()=>{
