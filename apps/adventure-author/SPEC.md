@@ -34,7 +34,7 @@ The main workspace is a freeform directed graph.
 ### Node types
 
 - **Scene** — narration/dialogue and choices.
-- **Combat** — battlefield, enemies, interactions, victory and defeat outputs.
+- **Combat** — battlefield, enemy placements, interactions, victory and defeat outputs.
 - **Ending** — authored terminal node. Many incoming edges are allowed.
 
 There is no privileged main path. Any branch may be valid. Ordinary narrative loops are legal. A combat must not be wired so that one of its outcomes eventually returns to itself; the validator reports this as an error.
@@ -148,9 +148,49 @@ Zones are nodes. Connections are wires and carry a Move cost. The editor writes 
 
 PC and enemy starting positions are represented as chips associated with zones. The UI may implement this as drag/drop or a zone selector, but the visual result must clearly show starting placement.
 
-### Enemies
+## Enemy NPC subflow
 
-Enemies are created from scratch. No reusable enemy catalogue is required.
+Enemy NPCs are authored independently of combat scenes. The main navigation includes an **Enemies** button that opens a modal containing the adventure-level enemy roster and the structured enemy editor.
+
+Each enemy NPC definition contains its stable id, name, runtime combat stats, deterministic AI preset, and abilities. Enemy definitions do not contain a starting zone. Definitions may be duplicated and reused in any combat scene in the adventure. Renaming a definition updates every placement that refers to it. Deleting a referenced definition also removes its combat placements and interaction effects that target those placements, after confirmation.
+
+Enemy NPC definitions are stored in the top-level `enemies` array:
+
+```json
+"enemies": [
+  {
+    "id": "bandit",
+    "name": "Bandit",
+    "preset": "optimal_killer",
+    "hp": 150,
+    "stamina": 10,
+    "mana": 0,
+    "maxAp": 2,
+    "atk": 35,
+    "def": 5,
+    "dodge": 30,
+    "threat": 30,
+    "abilities": []
+  }
+]
+```
+
+### Combat placement
+
+The battlefield zone inspector does not edit enemy stat blocks. It provides a dropdown of adventure-level enemy NPCs. Adding an enemy creates a placement with a combat-local instance id, an `enemyId` reference, and a starting zone:
+
+```json
+"enemies": [
+  { "id": "bandit", "enemyId": "bandit", "zone": "camp" },
+  { "id": "bandit-2", "enemyId": "bandit", "zone": "gate" }
+]
+```
+
+Combat-local instance ids remain the targets used by battlefield interactions. The same enemy NPC definition may therefore appear more than once in one combat without sharing runtime state.
+
+When an older adventure is opened, each complete enemy object embedded in a combat scene is moved into the adventure-level roster and replaced with a placement reference. Conflicting definition ids receive deterministic numeric suffixes.
+
+### Ability templates
 
 The editor provides agnostic ability presets as starting points. They are copied into the enemy and may then be renamed and tuned. Initial presets should cover at least:
 
@@ -168,7 +208,7 @@ The editor provides agnostic ability presets as starting points. They are copied
 
 The presets are conveniences, not new runtime ability kinds.
 
-Enemy editor fields include existing runtime stats, deterministic AI preset, zone, and abilities. Authors may duplicate an enemy by a requested count; generated copies receive unique ids.
+Enemy editor fields include existing runtime stats, deterministic AI preset, and abilities. Starting zones belong only to combat placements.
 
 ### Enemy AI
 

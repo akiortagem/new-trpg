@@ -177,6 +177,21 @@
     if (!isObject(adventure)) return issues;
     if (adventure.questDays != null && (!isFiniteNumber(adventure.questDays) || adventure.questDays < 0)) issues.push("adventure.questDays: must be a nonnegative finite number");
 
+    if (adventure.enemies != null && !Array.isArray(adventure.enemies)) issues.push("adventure.enemies: must be an array");
+    const enemyDefinitionIds = new Set();
+    for (const [index, enemy] of (Array.isArray(adventure.enemies) ? adventure.enemies : []).entries()) {
+      const path=`adventure.enemies[${index}]`;
+      if (!isObject(enemy)) { issues.push(`${path}: must be an object`); continue; }
+      if (typeof enemy.id!=="string"||!enemy.id.trim()) issues.push(`${path}.id: must be a non-empty string`);
+      else if(enemyDefinitionIds.has(enemy.id))issues.push("adventure.enemies: enemy NPC ids must be unique");
+      else enemyDefinitionIds.add(enemy.id);
+      if (typeof enemy.name!=="string"||!enemy.name.trim()) issues.push(`${path}.name: must be a non-empty string`);
+      if (!new Set(["optimal_killer","self_preserving","dramatic_gm"]).has(enemy.preset)) issues.push(`${path}.preset: must be a supported NPC preset`);
+      for(const key of ["hp","maxAp","atk","def","dodge","threat","stamina","mana"])if(!isFiniteNumber(enemy[key])||enemy[key]<0)issues.push(`${path}.${key}: must be a nonnegative finite number`);
+      if(!Array.isArray(enemy.abilities)||!enemy.abilities.length)issues.push(`${path}.abilities: must contain at least one ability`);
+      else enemy.abilities.forEach((ability,abilityIndex)=>validateAbilityExtras(ability,`${path}.abilities[${abilityIndex}]`,issues));
+    }
+
     const validClocks = new Set(Object.keys(isObject(adventure.clocks) ? adventure.clocks : {}));
     for (const [id, clock] of Object.entries(isObject(adventure.clocks) ? adventure.clocks : {})) {
       if (isObject(clock) && clock.filled != null) {

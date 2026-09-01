@@ -34,6 +34,7 @@
       initialState:{flags:{},counters:{}},
       clocks:{},
       party:[],
+      enemies:[],
       scenes:{
         start:{
           type:"scene",
@@ -140,6 +141,37 @@
     return{ok:true,interaction};
   }
 
+  function migrateEnemyCatalog(adventure){
+    if(!object(adventure))return adventure;
+    adventure.enemies=Array.isArray(adventure.enemies)?adventure.enemies:[];
+    const used=new Set(adventure.enemies.map(enemy=>enemy?.id).filter(Boolean));
+    for(const scene of Object.values(object(adventure.scenes)?adventure.scenes:{})){
+      if(scene?.type!=="combat"||!Array.isArray(scene.enemies))continue;
+      scene.enemies=scene.enemies.map(enemy=>{
+        if(!object(enemy)||enemy.enemyId)return enemy;
+        const base=slug(enemy.id||enemy.name||"enemy");
+        let enemyId=base,suffix=2;
+        while(used.has(enemyId))enemyId=`${base}-${suffix++}`;
+        used.add(enemyId);
+        const definition={...enemy,id:enemyId};
+        delete definition.zone;
+        adventure.enemies.push(definition);
+        return{id:enemy.id||enemyId,enemyId,zone:enemy.zone};
+      });
+    }
+    return adventure;
+  }
+
+  function enemyDefinition(adventure,placement){
+    return (adventure?.enemies||[]).find(enemy=>enemy?.id===placement?.enemyId)||null;
+  }
+
+  function enemyReferenceCount(adventure,enemyId){
+    let count=0;
+    for(const scene of Object.values(adventure?.scenes||{}))if(scene?.type==="combat")for(const placement of scene.enemies||[])if(placement?.enemyId===enemyId)count++;
+    return count;
+  }
+
   function openableShapeIssues(value){
     const issues=[];
     const arrayOfObjects=(items,path)=>{
@@ -182,6 +214,13 @@
         if(!object(member))continue;
         if(member.abilities!=null)validateAbilities(member.abilities,`party[${index}].abilities`);
       }
+    }
+
+    if(value.enemies!=null&&arrayOfObjects(value.enemies,"enemies")){
+      value.enemies.forEach((enemy,index)=>{
+        if(!object(enemy))return;
+        if(enemy.abilities!=null)validateAbilities(enemy.abilities,`enemies[${index}].abilities`);
+      });
     }
 
     if(!object(value.initialState))issues.push("initialState must be an object.");
@@ -229,7 +268,7 @@
           arrayOfObjects(scene.battlefield.links,`scenes.${id}.battlefield.links`);
         }
         if(!object(scene.pcStarts))issues.push(`scenes.${id}.pcStarts must be an object.`);
-        if(arrayOfObjects(scene.enemies,`scenes.${id}.enemies`))scene.enemies.forEach((enemy,index)=>{if(object(enemy)&&enemy.abilities!=null)validateAbilities(enemy.abilities,`scenes.${id}.enemies[${index}].abilities`);});
+        if(arrayOfObjects(scene.enemies,`scenes.${id}.enemies`))scene.enemies.forEach((enemy,index)=>{if(object(enemy)&&!enemy.enemyId&&enemy.abilities!=null)validateAbilities(enemy.abilities,`scenes.${id}.enemies[${index}].abilities`);});
         if(scene.interactions!=null&&arrayOfObjects(scene.interactions,`scenes.${id}.interactions`))scene.interactions.forEach((interaction,index)=>{if(object(interaction)&&interaction.effects!=null)arrayOfObjects(interaction.effects,`scenes.${id}.interactions[${index}].effects`);});
         for(const [name,outcome] of [["victory",scene.victory],["defeat",scene.defeat]]){
           if(!object(outcome))issues.push(`scenes.${id}.${name} must be an object.`);
@@ -283,5 +322,5 @@
     return changed;
   }
 
-  return {ABILITY_KINDS,slug,createAdventureDraft,renameChoiceId,abilityUsesTargetBounds,ensureAbilityKindFields,companionImportIssues,clockIds,canUseAdvanceClock,clockEffectIssues,validateWizardDraftInput,parseNonNegativeNumber,parsePositiveInteger,isBattlefieldScene,updateBattlefieldLink,removeBattlefieldLink,updateInteractionZone,openableShapeIssues,numericAddEffectIssues,parseAddEffectValue,connectOutcome,disconnectOutcome};
+  return {ABILITY_KINDS,slug,createAdventureDraft,renameChoiceId,abilityUsesTargetBounds,ensureAbilityKindFields,companionImportIssues,clockIds,canUseAdvanceClock,clockEffectIssues,validateWizardDraftInput,parseNonNegativeNumber,parsePositiveInteger,isBattlefieldScene,updateBattlefieldLink,removeBattlefieldLink,updateInteractionZone,migrateEnemyCatalog,enemyDefinition,enemyReferenceCount,openableShapeIssues,numericAddEffectIssues,parseAddEffectValue,connectOutcome,disconnectOutcome};
 });

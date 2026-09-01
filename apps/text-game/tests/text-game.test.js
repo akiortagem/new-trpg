@@ -229,6 +229,7 @@ test("authored Interact actions apply predetermined battlefield outcomes",()=>{
 test("the complete miniature adventure in the authoring guide is valid JSON and validates",()=>{
   const markdown=fs.readFileSync(path.resolve(__dirname,"..","AUTHORING.md"),"utf8"),section=markdown.split("## Complete miniature adventure")[1],match=section.match(/```json\n([\s\S]*?)\n```/);
   assert.ok(match,"the guide contains a complete JSON example");const value=JSON.parse(match[1]);assert.deepEqual(Core.validateAdventure(value),[]);
+  value.startScene="ambush";const run=Core.createRun(character(),value,()=>0.5);assert.equal(run.combat.enemies[0].id,"raider-1");assert.equal(run.combat.enemies[0].name,"Road Raider");
 });
 
 test("static application exposes local files, three save slots, and log export",()=>{
