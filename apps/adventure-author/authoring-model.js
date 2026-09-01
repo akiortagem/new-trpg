@@ -23,6 +23,16 @@
     return String(value||"item").toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"item";
   }
 
+  function createContinueChoice(){
+    return {
+      id:"continue",
+      label:"Continue",
+      resolution:"automatic",
+      reason:"The scene is ready to continue.",
+      outcome:{text:"Continue the adventure.",next:""}
+    };
+  }
+
   function createAdventureDraft(id,title,days){
     return {
       schemaVersion:2,
@@ -40,13 +50,7 @@
           type:"scene",
           title:"Opening",
           text:["Write the opening of the adventure."],
-          choices:[{
-            id:"continue",
-            label:"Continue",
-            resolution:"automatic",
-            reason:"The opening is ready to continue.",
-            outcome:{text:"Continue the adventure.",end:"victory"}
-          }]
+          choices:[{...createContinueChoice(),reason:"The opening is ready to continue.",outcome:{text:"Continue the adventure.",end:"victory"}}]
         }
       },
       editor:{nodes:{start:{x:120,y:100}}}
@@ -94,9 +98,8 @@
     return issues;
   }
 
-  function validateWizardDraftInput(id,title,days){
+  function validateWizardDraftInput(title,days){
     const errors=[];
-    if(!String(id||"").trim())errors.push("Adventure ID is required.");
     if(!String(title||"").trim())errors.push("Title is required.");
     const n=Number(days);
     if(!Number.isFinite(n)||n<0)errors.push("Quest days must be zero or greater.");
@@ -322,5 +325,5 @@
     return changed;
   }
 
-  return {ABILITY_KINDS,slug,createAdventureDraft,renameChoiceId,abilityUsesTargetBounds,ensureAbilityKindFields,companionImportIssues,clockIds,canUseAdvanceClock,clockEffectIssues,validateWizardDraftInput,parseNonNegativeNumber,parsePositiveInteger,isBattlefieldScene,updateBattlefieldLink,removeBattlefieldLink,updateInteractionZone,migrateEnemyCatalog,enemyDefinition,enemyReferenceCount,openableShapeIssues,numericAddEffectIssues,parseAddEffectValue,connectOutcome,disconnectOutcome};
+  return {ABILITY_KINDS,slug,createContinueChoice,createAdventureDraft,renameChoiceId,abilityUsesTargetBounds,ensureAbilityKindFields,companionImportIssues,clockIds,canUseAdvanceClock,clockEffectIssues,validateWizardDraftInput,parseNonNegativeNumber,parsePositiveInteger,isBattlefieldScene,updateBattlefieldLink,removeBattlefieldLink,updateInteractionZone,migrateEnemyCatalog,enemyDefinition,enemyReferenceCount,openableShapeIssues,numericAddEffectIssues,parseAddEffectValue,connectOutcome,disconnectOutcome};
 });
