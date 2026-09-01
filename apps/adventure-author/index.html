@@ -44,12 +44,18 @@
   <dialog id="wizardDialog">
     <form method="dialog" id="wizardForm" class="dialog-card">
       <h2>New Adventure</h2>
-      <label>Adventure ID<input id="wizId" value="new-adventure" required></label>
       <label>Title<input id="wizTitle" value="New Adventure" required></label>
       <label>Quest days<input id="wizDays" type="number" min="0" value="3" required></label>
       <p class="hint">$main remains player-selected. Companion character JSON can be embedded after creation from Adventure settings.</p>
       <div class="dialog-actions"><button value="cancel">Cancel</button><button id="createAdventureBtn" value="default">Create</button></div>
     </form>
+  </dialog>
+
+  <dialog id="sceneDialog">
+    <div class="dialog-card scene-dialog">
+      <div class="dialog-title-row"><div><h2 id="sceneDialogTitle">Scene</h2><span id="sceneDialogId" class="entity-id"></span></div><button id="closeSceneBtn">Close</button></div>
+      <section id="sceneEditor" class="scene-editor"></section>
+    </div>
   </dialog>
 
   <dialog id="jsonDialog">

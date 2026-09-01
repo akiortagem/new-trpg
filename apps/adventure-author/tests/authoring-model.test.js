@@ -40,11 +40,29 @@ test("legacy enemies with colliding ids receive distinct catalogue ids",()=>{
   assert.deepEqual([value.scenes.one.enemies[0].enemyId,value.scenes.two.enemies[0].enemyId],["guard","guard-2"]);
 });
 
-test("wizard draft validation rejects missing required fields and negative days",()=>{
-  assert.deepEqual(Model.validateWizardDraftInput("adventure","Title",0),[]);
-  assert.ok(Model.validateWizardDraftInput("","Title",1).some(x=>/id is required/i.test(x)));
-  assert.ok(Model.validateWizardDraftInput("adventure","",1).some(x=>/title is required/i.test(x)));
-  assert.ok(Model.validateWizardDraftInput("adventure","Title",-1).some(x=>/zero or greater/i.test(x)));
+test("wizard draft validation only requires author-facing fields",()=>{
+  assert.deepEqual(Model.validateWizardDraftInput("Title",0),[]);
+  assert.ok(Model.validateWizardDraftInput("",1).some(x=>/title is required/i.test(x)));
+  assert.ok(Model.validateWizardDraftInput("Title",-1).some(x=>/zero or greater/i.test(x)));
+});
+
+test("new scene defaults provide an auto-id continue choice",()=>{
+  const first=Model.createContinueChoice(),second=Model.createContinueChoice();
+  assert.deepEqual(first,{id:"continue",label:"Continue",resolution:"automatic",reason:"The scene is ready to continue.",outcome:{text:"Continue the adventure.",next:""}});
+  assert.notEqual(first,second);
+  first.outcome.text="Changed";
+  assert.equal(second.outcome.text,"Continue the adventure.");
+});
+
+test("structured authoring uses a scene modal and exposes no editable entity ids",()=>{
+  const html=fs.readFileSync(require.resolve("../index.html"),"utf8");
+  const app=fs.readFileSync(require.resolve("../app.js"),"utf8");
+  assert.match(html,/id="sceneDialog"/);
+  assert.match(html,/id="sceneEditor"/);
+  assert.doesNotMatch(html,/id="wizId"/);
+  assert.doesNotMatch(app,/field\("(?:Adventure )?ID"/);
+  assert.doesNotMatch(app,/data-ab-id|data-clock-id/);
+  assert.match(app,/choices:\[Model\.createContinueChoice\(\)\]/);
 });
 
 test("numeric editor parsers enforce effect bounds",()=>{
