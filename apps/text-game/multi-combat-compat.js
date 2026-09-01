@@ -124,7 +124,7 @@
 
     if (effect.type === "advance-clock") {
       if (!context.validClocks.has(effect.id)) issues.push(`${path}.id: unknown progress clock ${effect.id || "(missing)"}`);
-      if (effect.segments != null && (!Number.isInteger(effect.segments) || effect.segments < 1)) issues.push(`${path}.segments: advance-clock segments must be a positive whole number`);
+      if (effect.segments != null && (!Number.isInteger(effect.segments) || effect.segments < 1)) issues.push(`${path}.segments: advance-clock segments must be a finite numeric value and a positive whole number`);
     }
 
     if (effect.type === "damage-enemy") {
@@ -235,10 +235,7 @@
   }
 
   function validateAdventureWithMultipleCombats(adventure) {
-    return [
-      ...baseAdventureErrors(adventure).filter(issue => issue !== combatCountIssue),
-      ...validateAdventureExtras(adventure)
-    ];
+    return [...baseAdventureErrors(adventure).filter(issue => issue !== combatCountIssue), ...validateAdventureExtras(adventure)];
   }
 
   function validateCharacterWithRuntimeExtras(character, path = "character") {
@@ -253,36 +250,22 @@
     const entries = Object.entries(safe.scenes || {});
     const combatIds = entries.filter(([, scene]) => scene.type === "combat").map(([id]) => id);
     if (combatIds.length === 1) return safe;
-
     if (combatIds.length === 0) {
       const usedIds = new Set(Object.keys(safe.scenes || {}));
-      let id = "__compat_validation_combat__";
-      let suffix = 2;
+      let id = "__compat_validation_combat__", suffix = 2;
       while (usedIds.has(id)) id = `__compat_validation_combat__${suffix++}`;
       const companionIds = (safe.party || []).map(character => character.id);
       safe.scenes[id] = {
-        type: "combat",
-        title: "Compatibility validation combat",
-        ambush: false,
-        battlefield: { zones: [{ id: "compat-zone", name: "Compatibility Zone" }], links: [] },
-        pcStarts: Object.fromEntries(["$main", ...companionIds].map(characterId => [characterId, "compat-zone"])),
-        enemies: [{
-          id: "compat-enemy", name: "Compatibility Enemy", preset: "optimal_killer", zone: "compat-zone",
-          hp: 1, stamina: 0, mana: 0, maxAp: 1, atk: 1, def: 0, dodge: 0, threat: 0,
-          abilities: [{ id: "compat-strike", name: "Compatibility Strike", kind: "attack", ap: 1, stamina: 0, mana: 0, power: 1, minRange: 0, maxRange: 0, attackBonus: 0, tags: ["Physical"] }]
-        }],
-        victory: { text: "Compatibility victory.", end: "victory" },
-        defeat: { text: "Compatibility defeat.", end: "defeat" }
+        type:"combat",title:"Compatibility validation combat",ambush:false,
+        battlefield:{zones:[{id:"compat-zone",name:"Compatibility Zone"}],links:[]},
+        pcStarts:Object.fromEntries(["$main",...companionIds].map(characterId=>[characterId,"compat-zone"])),
+        enemies:[{id:"compat-enemy",name:"Compatibility Enemy",preset:"optimal_killer",zone:"compat-zone",hp:1,stamina:0,mana:0,maxAp:1,atk:1,def:0,dodge:0,threat:0,abilities:[{id:"compat-strike",name:"Compatibility Strike",kind:"attack",ap:1,stamina:0,mana:0,power:1,minRange:0,maxRange:0,attackBonus:0,tags:["Physical"]}]}],
+        victory:{text:"Compatibility victory.",end:"victory"},defeat:{text:"Compatibility defeat.",end:"defeat"}
       };
       return safe;
     }
-
     const keepId = safe.scenes[safe.startScene]?.type === "combat" ? safe.startScene : combatIds[0];
-    for (const id of combatIds) {
-      if (id === keepId) continue;
-      const original = safe.scenes[id];
-      safe.scenes[id] = {type:"ending",title:original.title||"Compatibility placeholder",outcome:"victory",text:"Compatibility validation placeholder."};
-    }
+    for (const id of combatIds) if (id !== keepId) { const original=safe.scenes[id]; safe.scenes[id]={type:"ending",title:original.title||"Compatibility placeholder",outcome:"victory",text:"Compatibility validation placeholder."}; }
     return safe;
   }
 
@@ -302,12 +285,7 @@
       const interaction = run?.combat?.interactions?.find(item => item.id === interactionId);
       if (!interaction) return performInteraction(run, pcId, interactionId, random);
       const changed = [];
-      for (const effect of interaction.effects || []) {
-        if (effect.type === "move-unit" && effect.side === "pc" && effect.targetId === "$main") {
-          changed.push(effect);
-          effect.targetId = run.mainCharacterId;
-        }
-      }
+      for (const effect of interaction.effects || []) if (effect.type === "move-unit" && effect.side === "pc" && effect.targetId === "$main") { changed.push(effect); effect.targetId = run.mainCharacterId; }
       try { return performInteraction(run, pcId, interactionId, random); }
       finally { for (const effect of changed) effect.targetId = "$main"; }
     };
