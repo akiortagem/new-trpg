@@ -25,6 +25,17 @@ test("wizard draft validation rejects missing required fields and negative days"
   assert.ok(Model.validateWizardDraftInput("adventure","Title",-1).some(x=>/zero or greater/i.test(x)));
 });
 
+test("numeric editor parsers enforce effect bounds",()=>{
+  assert.deepEqual(Model.parseNonNegativeNumber("0","Damage"),{ok:true,value:0});
+  assert.deepEqual(Model.parseNonNegativeNumber("12.5","Damage"),{ok:true,value:12.5});
+  assert.equal(Model.parseNonNegativeNumber("-1","Damage").ok,false);
+  assert.equal(Model.parseNonNegativeNumber("","Damage").ok,false);
+  assert.deepEqual(Model.parsePositiveInteger("1","Clock segments"),{ok:true,value:1});
+  assert.deepEqual(Model.parsePositiveInteger("3","Clock segments"),{ok:true,value:3});
+  assert.equal(Model.parsePositiveInteger("0","Clock segments").ok,false);
+  assert.equal(Model.parsePositiveInteger("1.5","Clock segments").ok,false);
+});
+
 test("choice renames reject duplicate sibling ids without mutating the scene",()=>{
   const scene={type:"scene",choices:[choice("first"),choice("second")]};
   const result=Model.renameChoiceId(scene,1,"First");
@@ -79,6 +90,13 @@ test("clock effect validation also catches stale battlefield interaction referen
   assert.match(issues[0].message,/old-search/);
 });
 
+test("battlefield history guard requires a real combat battlefield",()=>{
+  assert.equal(Model.isBattlefieldScene({type:"combat",battlefield:{zones:[],links:[]}}),true);
+  assert.equal(Model.isBattlefieldScene({type:"scene",battlefield:{zones:[],links:[]}}),false);
+  assert.equal(Model.isBattlefieldScene({type:"combat"}),false);
+  assert.equal(Model.isBattlefieldScene(null),false);
+});
+
 test("battlefield links can be corrected and removed through model helpers",()=>{
   const scene={battlefield:{links:[{from:"road",to:"ridge",cost:1},{from:"ridge",to:"camp",cost:2}]}};
   assert.equal(Model.updateBattlefieldLink(scene,0,{cost:3}).ok,true);
@@ -117,6 +135,17 @@ test("openable shape validation rejects containers and nested entries that would
   value.scenes.start.text=["Safe"];
   value.clocks={search:null};
   assert.ok(Model.openableShapeIssues(value).some(x=>/clocks\.search must be an object/i.test(x)));
+});
+
+test("openable shape validation rejects malformed visibility groups and layout entries",()=>{
+  const value=Model.createAdventureDraft("visibility-shape","Visibility Shape",1);
+  value.scenes.start.choices[0].when=[null];
+  assert.ok(Model.openableShapeIssues(value).some(x=>/when\[0\] must be an object/i.test(x)));
+  value.scenes.start.choices[0].when={all:{}};
+  assert.ok(Model.openableShapeIssues(value).some(x=>/when\.all must be an array/i.test(x)));
+  value.scenes.start.choices[0].when={all:[{path:"flags.ready",equals:true}]};
+  value.editor.nodes.start="bad-position";
+  assert.ok(Model.openableShapeIssues(value).some(x=>/editor\.nodes\.start must be an object/i.test(x)));
 });
 
 test("openable shape validation rejects malformed check subcontainers",()=>{
