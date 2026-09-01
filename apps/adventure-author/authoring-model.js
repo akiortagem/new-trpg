@@ -17,6 +17,7 @@
   "use strict";
 
   const ABILITY_KINDS=["attack","multi","push","persistent","rush","rally"];
+  const object=value=>Boolean(value)&&typeof value==="object"&&!Array.isArray(value);
 
   function slug(value){
     return String(value||"item").toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"item";
@@ -101,6 +102,22 @@
     return errors;
   }
 
+  function parseNonNegativeNumber(value,label="Value"){
+    if(typeof value==="string"&&!value.trim())return{ok:false,error:`${label} must be a nonnegative number.`};
+    const n=Number(value);
+    return Number.isFinite(n)&&n>=0?{ok:true,value:n}:{ok:false,error:`${label} must be a nonnegative number.`};
+  }
+
+  function parsePositiveInteger(value,label="Value"){
+    if(typeof value==="string"&&!value.trim())return{ok:false,error:`${label} must be a positive whole number.`};
+    const n=Number(value);
+    return Number.isInteger(n)&&n>=1?{ok:true,value:n}:{ok:false,error:`${label} must be a positive whole number.`};
+  }
+
+  function isBattlefieldScene(scene){
+    return object(scene)&&scene.type==="combat"&&object(scene.battlefield)&&Array.isArray(scene.battlefield.zones)&&Array.isArray(scene.battlefield.links);
+  }
+
   function updateBattlefieldLink(scene,index,changes){
     const links=scene?.battlefield?.links;
     if(!Array.isArray(links)||!links[index])return{ok:false,error:"Battlefield link not found."};
@@ -125,7 +142,6 @@
 
   function openableShapeIssues(value){
     const issues=[];
-    const object=v=>Boolean(v)&&typeof v==="object"&&!Array.isArray(v);
     const arrayOfObjects=(items,path)=>{
       if(!Array.isArray(items)){issues.push(`${path} must be an array.`);return false;}
       items.forEach((item,index)=>{if(!object(item))issues.push(`${path}[${index}] must be an object.`);});
@@ -136,7 +152,28 @@
       items.forEach((ability,index)=>{
         if(!object(ability))return;
         if(ability.tags!=null&&!Array.isArray(ability.tags))issues.push(`${path}[${index}].tags must be an array when present.`);
+        if(ability.condition!=null&&typeof ability.condition!=="string"&&!object(ability.condition))issues.push(`${path}[${index}].condition must be a string or object when present.`);
       });
+    };
+    const validateConditionShape=(condition,path)=>{
+      if(!object(condition))issues.push(`${path} must be an object.`);
+    };
+    const validateWhenShape=(when,path)=>{
+      if(when==null)return;
+      if(Array.isArray(when)){when.forEach((condition,index)=>validateConditionShape(condition,`${path}[${index}]`));return;}
+      if(!object(when)){issues.push(`${path} must be an object or array.`);return;}
+      const hasAll=Object.prototype.hasOwnProperty.call(when,"all"),hasAny=Object.prototype.hasOwnProperty.call(when,"any");
+      if(hasAll||hasAny){
+        for(const key of ["all","any"]){
+          if(!Object.prototype.hasOwnProperty.call(when,key))continue;
+          if(!Array.isArray(when[key]))issues.push(`${path}.${key} must be an array.`);
+          else when[key].forEach((condition,index)=>validateConditionShape(condition,`${path}.${key}[${index}]`));
+        }
+      }
+    };
+    const validatePositionMap=(positions,path)=>{
+      if(!object(positions)){issues.push(`${path} must be an object.`);return;}
+      for(const [id,position] of Object.entries(positions))if(!object(position))issues.push(`${path}.${id} must be an object.`);
     };
     if(!object(value))return["Adventure must be a JSON object."];
 
@@ -166,6 +203,7 @@
           scene.choices.forEach((choice,index)=>{
             if(!object(choice))return;
             const base=`scenes.${id}.choices[${index}]`;
+            validateWhenShape(choice.when,`${base}.when`);
             if(choice.resolution==="check"){
               if(!object(choice.actor))issues.push(`${base}.actor must be an object.`);
               else if(choice.actor.eligible!=null&&!Array.isArray(choice.actor.eligible))issues.push(`${base}.actor.eligible must be an array when present.`);
@@ -191,26 +229,22 @@
           arrayOfObjects(scene.battlefield.links,`scenes.${id}.battlefield.links`);
         }
         if(!object(scene.pcStarts))issues.push(`scenes.${id}.pcStarts must be an object.`);
-        if(arrayOfObjects(scene.enemies,`scenes.${id}.enemies`)){
-          scene.enemies.forEach((enemy,index)=>{if(object(enemy)&&enemy.abilities!=null)validateAbilities(enemy.abilities,`scenes.${id}.enemies[${index}].abilities`);});
-        }
-        if(scene.interactions!=null&&arrayOfObjects(scene.interactions,`scenes.${id}.interactions`)){
-          scene.interactions.forEach((interaction,index)=>{if(object(interaction)&&interaction.effects!=null)arrayOfObjects(interaction.effects,`scenes.${id}.interactions[${index}].effects`);});
-        }
+        if(arrayOfObjects(scene.enemies,`scenes.${id}.enemies`))scene.enemies.forEach((enemy,index)=>{if(object(enemy)&&enemy.abilities!=null)validateAbilities(enemy.abilities,`scenes.${id}.enemies[${index}].abilities`);});
+        if(scene.interactions!=null&&arrayOfObjects(scene.interactions,`scenes.${id}.interactions`))scene.interactions.forEach((interaction,index)=>{if(object(interaction)&&interaction.effects!=null)arrayOfObjects(interaction.effects,`scenes.${id}.interactions[${index}].effects`);});
         for(const [name,outcome] of [["victory",scene.victory],["defeat",scene.defeat]]){
           if(!object(outcome))issues.push(`scenes.${id}.${name} must be an object.`);
           else if(outcome.effects!=null)arrayOfObjects(outcome.effects,`scenes.${id}.${name}.effects`);
         }
         if(scene.editor!=null){
           if(!object(scene.editor))issues.push(`scenes.${id}.editor must be an object when present.`);
-          else if(scene.editor.zones!=null&&!object(scene.editor.zones))issues.push(`scenes.${id}.editor.zones must be an object when present.`);
+          else if(scene.editor.zones!=null)validatePositionMap(scene.editor.zones,`scenes.${id}.editor.zones`);
         }
       }
     }
 
     if(value.editor!=null){
       if(!object(value.editor))issues.push("editor must be an object when present.");
-      else if(value.editor.nodes!=null&&!object(value.editor.nodes))issues.push("editor.nodes must be an object when present.");
+      else if(value.editor.nodes!=null)validatePositionMap(value.editor.nodes,"editor.nodes");
     }
     return issues;
   }
@@ -232,5 +266,5 @@
     return Number.isFinite(n)?{ok:true,value:n}:{ok:false,error:"Add effect value must be a number."};
   }
 
-  return {ABILITY_KINDS,slug,createAdventureDraft,renameChoiceId,abilityUsesTargetBounds,ensureAbilityKindFields,companionImportIssues,clockIds,canUseAdvanceClock,clockEffectIssues,validateWizardDraftInput,updateBattlefieldLink,removeBattlefieldLink,updateInteractionZone,openableShapeIssues,numericAddEffectIssues,parseAddEffectValue};
+  return {ABILITY_KINDS,slug,createAdventureDraft,renameChoiceId,abilityUsesTargetBounds,ensureAbilityKindFields,companionImportIssues,clockIds,canUseAdvanceClock,clockEffectIssues,validateWizardDraftInput,parseNonNegativeNumber,parsePositiveInteger,isBattlefieldScene,updateBattlefieldLink,removeBattlefieldLink,updateInteractionZone,openableShapeIssues,numericAddEffectIssues,parseAddEffectValue};
 });
