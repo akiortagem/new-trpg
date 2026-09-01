@@ -266,5 +266,22 @@
     return Number.isFinite(n)?{ok:true,value:n}:{ok:false,error:"Add effect value must be a number."};
   }
 
-  return {ABILITY_KINDS,slug,createAdventureDraft,renameChoiceId,abilityUsesTargetBounds,ensureAbilityKindFields,companionImportIssues,clockIds,canUseAdvanceClock,clockEffectIssues,validateWizardDraftInput,parseNonNegativeNumber,parsePositiveInteger,isBattlefieldScene,updateBattlefieldLink,removeBattlefieldLink,updateInteractionZone,openableShapeIssues,numericAddEffectIssues,parseAddEffectValue};
+  function connectOutcome(outcome,targetId){
+    if(!object(outcome))return{ok:false,error:"Outcome not found."};
+    const next=String(targetId||"").trim();
+    if(!next)return{ok:false,error:"Destination node is required."};
+    delete outcome.end;
+    outcome.next=next;
+    return{ok:true,next};
+  }
+
+  function disconnectOutcome(outcome){
+    if(!object(outcome))return false;
+    const changed=Object.prototype.hasOwnProperty.call(outcome,"next")||Object.prototype.hasOwnProperty.call(outcome,"end");
+    delete outcome.next;
+    delete outcome.end;
+    return changed;
+  }
+
+  return {ABILITY_KINDS,slug,createAdventureDraft,renameChoiceId,abilityUsesTargetBounds,ensureAbilityKindFields,companionImportIssues,clockIds,canUseAdvanceClock,clockEffectIssues,validateWizardDraftInput,parseNonNegativeNumber,parsePositiveInteger,isBattlefieldScene,updateBattlefieldLink,removeBattlefieldLink,updateInteractionZone,openableShapeIssues,numericAddEffectIssues,parseAddEffectValue,connectOutcome,disconnectOutcome};
 });
