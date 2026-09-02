@@ -30,3 +30,13 @@ test('conflicting or unknown authored identities are validation errors',()=>{
   assert.match(errors[0],/conflicts/);
   assert.match(errors[1],/must be one of/);
 });
+
+test('shared validation preserves existing errors and adds visual identity errors once',()=>{
+  const core={validateAdventure:()=>['base error']};
+  Visuals.installValidation(core);
+  Visuals.installValidation(core);
+  const errors=core.validateAdventure(adventure([{speaker:'Mira',text:'A',visualIdentity:'unknown'}]));
+  assert.equal(errors.length,2);
+  assert.equal(errors[0],'base error');
+  assert.match(errors[1],/visualIdentity/);
+});
