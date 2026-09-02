@@ -18,7 +18,7 @@ At the start screen:
 2. Select an adventure JSON file.
 3. Start the adventure.
 
-The app does not include a playable adventure or main character. See [AUTHORING.md](AUTHORING.md) for both formats and a complete miniature example. See [OPTIONAL_SCENE_TITLES.md](OPTIONAL_SCENE_TITLES.md) for the titleless-scene contract.
+The app does not include a playable adventure or main character. See [AUTHORING.md](AUTHORING.md) for both formats and a complete miniature example. See [OPTIONAL_SCENE_TITLES.md](OPTIONAL_SCENE_TITLES.md) for the scene-title visibility contract.
 
 Character files use schema version 1. Adventure files use schema version 2. Save slots from engine version 1 are rejected with an explicit unsupported-version message because their checks predate Base TN.
 
@@ -28,7 +28,7 @@ Character files use schema version 1. Adventure files use schema version 2. Save
 - Fixed actors or player-selected eligible actors for checks.
 - Full disclosure of Base TN, attributes, skill, modifiers, and final TN before rolling.
 - A visual-novel presentation that shows one narration, dialogue, choice, roll, or outcome at a time in a fixed text box, with character-by-character text and click-to-reveal/advance controls.
-- Optional titles on ordinary scenes, combat scenes, and endings. Omitted, `null`, or blank scene titles produce no title interruption while preserving the scene's content and flow.
+- Independent scene-title presentation. Ordinary scenes, combat scenes, and endings may keep a descriptive `title` for authoring while `showTitle: false` suppresses it in-game; omitted `showTitle` defaults to `true`.
 - Stable per-speaker visual identities for dialogue. Adventures may optionally author an identity; otherwise the game assigns one deterministically and avoids collisions while palette slots remain. Speaker changes receive a brief emphasis transition.
 - Automatic success or failure when the final TN is at least 100 or at most 0.
 - Author-marked no-roll outcomes.
@@ -49,17 +49,17 @@ Character files use schema version 1. Adventure files use schema version 2. Save
 | `index.html` | Application shell. |
 | `styles.css` | Responsive text-game and combat presentation. |
 | `speaker-visuals.css` | Per-speaker palette and speaker-change transition styling. |
-| `optional-scene-titles.css` | Hides title containers when a scene deliberately has no title. |
+| `optional-scene-titles.css` | Hides title containers when scene-title presentation is disabled. |
 | `core.js` | Validation, adventure resolution, state, combat rules, and deterministic NPC controller. |
-| `optional-scene-titles.js` | Backward-compatible scene-title contract and titleless runtime presentation behavior. |
+| `optional-scene-titles.js` | Backward-compatible optional-title handling and `showTitle` runtime behavior. |
 | `speaker-visuals.js` | Speaker VI validation, deterministic assignment, save restoration, and DOM decoration. |
 | `app.js` | File loading, rendering, player inputs, save slots, and log export. |
 | `AUTHORING.md` | Character and adventure file reference. |
-| `OPTIONAL_SCENE_TITLES.md` | Optional scene-title contract and authoring examples. |
+| `OPTIONAL_SCENE_TITLES.md` | Scene title visibility contract and authoring examples. |
 | `SPEAKER_VISUAL_IDENTITIES.md` | Optional authored VI format and compatibility behavior. |
 | `characters/README.md` | Location and convention for reusable main-character files. |
 | `tests/text-game.test.js` | Rules-engine and format regression tests. |
-| `tests/optional-scene-titles.test.js` | Optional-title contract and presentation regression tests. |
+| `tests/optional-scene-titles.test.js` | Optional-title and title-visibility regression tests. |
 | `tests/speaker-visuals.test.js` | Speaker identity assignment and validation tests. |
 
 ## Testing
