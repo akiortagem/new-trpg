@@ -83,8 +83,9 @@
     const originalCreateRun=core.createRun.bind(core);
     core.createRun=function createRunWithSpeakerVisuals(mainCharacter,adventure,...rest){
       const visualErrors=inspectAdventure(adventure).errors;if(visualErrors.length)throw new Error(visualErrors.join("\n"));
-      setAdventure(adventure);
-      return originalCreateRun(mainCharacter,adventure,...rest);
+      const created=originalCreateRun(mainCharacter,adventure,...rest);
+      setAdventure(created.adventure);
+      return created;
     };
 
     function loadSlotAdventure(index){
@@ -126,7 +127,7 @@
     const observer=new root.MutationObserver(decorate);
     observer.observe(doc.querySelector("#app"),{childList:true,subtree:true});
     decorate();
-    return{setAdventure,decorate,disconnect:()=>observer.disconnect()};
+    return{setAdventure,decorate,getAssignments:()=>({...assignments}),disconnect:()=>observer.disconnect()};
   }
 
   return{PALETTE,hashSpeaker,dialoguePassages,inspectAdventure,assignmentsForAdventure,installValidation,installRuntime};
