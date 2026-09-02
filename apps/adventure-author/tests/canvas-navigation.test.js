@@ -9,6 +9,7 @@ class FakeTarget{
     this.listeners=new Map();
     this.scrollLeft=0;
     this.scrollTop=0;
+    this.defaultView=null;
     const classes=new Set();
     this.classList={
       add:value=>classes.add(value),
@@ -18,7 +19,11 @@ class FakeTarget{
   }
   addEventListener(type,handler,options){
     const handlers=this.listeners.get(type)||[];
-    handlers.push({handler,once:Boolean(options?.once)});
+    handlers.push({
+      handler,
+      once:Boolean(typeof options==="object"&&options?.once),
+      capture:options===true||Boolean(typeof options==="object"&&options?.capture)
+    });
     this.listeners.set(type,handlers);
   }
   removeEventListener(type,handler){
@@ -54,12 +59,53 @@ test("middle mouse drag pans the authoring viewport",()=>{
   assert.equal(prevented,true);
   assert.equal(viewport.classList.contains("canvas-panning"),true);
 
-  doc.dispatch("mousemove",{clientX:45,clientY:70});
+  doc.dispatch("mousemove",{buttons:4,clientX:45,clientY:70});
   assert.equal(viewport.scrollLeft,655);
   assert.equal(viewport.scrollTop,430);
 
   doc.dispatch("mouseup",{});
   assert.equal(viewport.classList.contains("canvas-panning"),false);
+});
+
+test("middle mouse pan starts in capture phase before child handlers can stop propagation",()=>{
+  const viewport=new FakeTarget(),doc=new FakeTarget();
+  Navigation.bindMiddleMousePan(viewport,doc);
+
+  const listener=viewport.listeners.get("mousedown")?.[0];
+  assert.ok(listener);
+  assert.equal(listener.capture,true);
+});
+
+test("panning is cancelled when browser focus is lost",()=>{
+  const viewport=new FakeTarget(),doc=new FakeTarget(),win=new FakeTarget();
+  doc.defaultView=win;
+  viewport.scrollLeft=300;
+  viewport.scrollTop=200;
+  Navigation.bindMiddleMousePan(viewport,doc);
+
+  viewport.dispatch("mousedown",{button:1,clientX:100,clientY:100,preventDefault(){}});
+  assert.equal(viewport.classList.contains("canvas-panning"),true);
+
+  win.dispatch("blur",{});
+  assert.equal(viewport.classList.contains("canvas-panning"),false);
+
+  doc.dispatch("mousemove",{buttons:4,clientX:0,clientY:0});
+  assert.equal(viewport.scrollLeft,300);
+  assert.equal(viewport.scrollTop,200);
+});
+
+test("mousemove cancels stale panning when the middle button is no longer held",()=>{
+  const viewport=new FakeTarget(),doc=new FakeTarget();
+  viewport.scrollLeft=300;
+  viewport.scrollTop=200;
+  Navigation.bindMiddleMousePan(viewport,doc);
+
+  viewport.dispatch("mousedown",{button:1,clientX:100,clientY:100,preventDefault(){}});
+  doc.dispatch("mousemove",{buttons:0,clientX:0,clientY:0});
+
+  assert.equal(viewport.classList.contains("canvas-panning"),false);
+  assert.equal(viewport.scrollLeft,300);
+  assert.equal(viewport.scrollTop,200);
 });
 
 test("left mouse interaction is left to existing node and connection dragging",()=>{
@@ -70,7 +116,7 @@ test("left mouse interaction is left to existing node and connection dragging",(
 
   let prevented=false;
   viewport.dispatch("mousedown",{button:0,clientX:100,clientY:100,preventDefault(){prevented=true;}});
-  doc.dispatch("mousemove",{clientX:20,clientY:20});
+  doc.dispatch("mousemove",{buttons:1,clientX:20,clientY:20});
 
   assert.equal(prevented,false);
   assert.equal(viewport.scrollLeft,200);
