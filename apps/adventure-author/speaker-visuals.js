@@ -8,6 +8,7 @@
   "use strict";
 
   const PALETTE=Shared.PALETTE;
+  const KNOWN_TOP_FIELDS=new Set(["schemaVersion","kind","id","title","startScene","questDays","initialState","clocks","party","enemies","scenes","editor"]);
   const object=value=>Boolean(value)&&typeof value==="object"&&!Array.isArray(value);
 
   function authoredOverrides(adventure){
@@ -30,17 +31,26 @@
     return changed;
   }
 
+  function isCaptureableAdventure(adventure,model){
+    if(!object(adventure)||adventure.kind!=="adventure"||adventure.schemaVersion!==2)return false;
+    if(!Object.keys(adventure).every(key=>KNOWN_TOP_FIELDS.has(key)))return false;
+    return !(model?.openableShapeIssues?.(adventure)||[]).length;
+  }
+
   function installAuthoring(root){
     if(root.__authorSpeakerVisualsInstalled)return;
     root.__authorSpeakerVisualsInstalled=true;
-    const doc=root.document,model=root.AdventureAuthorModel,originalParse=JSON.parse.bind(JSON),originalCreate=model.createAdventureDraft.bind(model);
+    const doc=root.document,model=root.AdventureAuthorModel,json=root.JSON||JSON,originalParse=json.parse.bind(json),originalCreate=model.createAdventureDraft.bind(model);
     let activeAdventure=null,overrides=new Map();
 
     function captureAdventure(adventure){
       if(!object(adventure)||adventure.kind!=="adventure")return adventure;
       activeAdventure=adventure;overrides=authoredOverrides(adventure);queueMicrotask(refreshVisibleCards);return adventure;
     }
-    JSON.parse=function parseWithSpeakerVisuals(...args){return captureAdventure(originalParse(...args))};
+    json.parse=function parseWithSpeakerVisuals(...args){
+      const parsed=originalParse(...args);
+      return isCaptureableAdventure(parsed,model)?captureAdventure(parsed):parsed;
+    };
     model.createAdventureDraft=function createAdventureDraftWithSpeakerVisuals(...args){return captureAdventure(originalCreate(...args))};
 
     function optionHtml(selected){
@@ -97,5 +107,5 @@
     return{captureAdventure,refreshVisibleCards,getAdventure:()=>activeAdventure,getOverrides:()=>new Map(overrides)};
   }
 
-  return{PALETTE,authoredOverrides,applySpeakerIdentityOverrides,installAuthoring};
+  return{PALETTE,authoredOverrides,applySpeakerIdentityOverrides,isCaptureableAdventure,installAuthoring};
 });
