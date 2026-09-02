@@ -79,6 +79,18 @@ test("scene authoring guards drag clicks and provides scoped scrolling and choic
   assert.match(app,/moveItem\(s\.choices,Number\(b\.dataset\.downChoice\),1\)/);
 });
 
+test("passage edits do not consume add clicks or reset the passage list",()=>{
+  const app=fs.readFileSync(require.resolve("../app.js"),"utf8");
+  assert.match(app,/function mutateInline\(fn,refreshGraph=false\)/);
+  assert.match(app,/\[data-pass-text\][^\n]*onchange=\(\)=>mutateInline/);
+  assert.match(app,/\[data-pass-speaker\][^\n]*onchange=\(\)=>mutateInline/);
+  assert.match(app,/const appendPassage=passage=>\{mutate\(/);
+  assert.match(app,/list\.scrollTop=list\.scrollHeight/);
+  assert.match(app,/fields\[fields\.length-1\]\.focus\(\)/);
+  assert.match(app,/addNarration[^\n]*appendPassage\("New narration\."\)/);
+  assert.match(app,/addDialogue[^\n]*appendPassage\(\{speaker:"Speaker",text:"New dialogue\."\}\)/);
+});
+
 test("numeric editor parsers enforce effect bounds",()=>{
   assert.deepEqual(Model.parseNonNegativeNumber("0","Damage"),{ok:true,value:0});
   assert.deepEqual(Model.parseNonNegativeNumber("12.5","Damage"),{ok:true,value:12.5});
