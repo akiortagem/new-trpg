@@ -65,6 +65,20 @@ test("structured authoring uses a scene modal and exposes no editable entity ids
   assert.match(app,/choices:\[Model\.createContinueChoice\(\)\]/);
 });
 
+test("scene authoring guards drag clicks and provides scoped scrolling and choice ordering",()=>{
+  const app=fs.readFileSync(require.resolve("../app.js"),"utf8");
+  const styles=fs.readFileSync(require.resolve("../styles.css"),"utf8");
+  assert.match(app,/suppressNodeOpen===id/);
+  assert.match(app,/setTimeout\(\(\)=>\{if\(suppressNodeOpen===id\)suppressNodeOpen=null;/);
+  assert.match(app,/class="stack passages-list"/);
+  assert.match(styles,/\.passages-list\{[^}]*overflow:auto/);
+  assert.match(styles,/\.scene-overview\{[^}]*overflow:hidden/);
+  assert.match(app,/data-up-choice/);
+  assert.match(app,/data-down-choice/);
+  assert.match(app,/moveItem\(s\.choices,Number\(b\.dataset\.upChoice\),-1\)/);
+  assert.match(app,/moveItem\(s\.choices,Number\(b\.dataset\.downChoice\),1\)/);
+});
+
 test("numeric editor parsers enforce effect bounds",()=>{
   assert.deepEqual(Model.parseNonNegativeNumber("0","Damage"),{ok:true,value:0});
   assert.deepEqual(Model.parseNonNegativeNumber("12.5","Damage"),{ok:true,value:12.5});
