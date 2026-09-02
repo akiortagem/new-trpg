@@ -80,6 +80,8 @@
 
   function suppressHiddenSceneEntries(run) {
     if (!run || !Array.isArray(run.log) || !isObject(run.adventure?.scenes)) return run;
+    const currentScene = run.adventure.scenes[run.sceneId];
+    if (run.ending && currentScene?.type === "ending" && !shouldShowTitle(currentScene)) run.ending.title = null;
     scrubHiddenCombatTitle(run);
     for (const entry of run.log) {
       if (entry?.type !== "scene.entered") continue;
@@ -95,8 +97,6 @@
 
   function restoreRuntimeTitles(run, adventure, mainName) {
     run.adventure = materializeAdventure(adventure, mainName);
-    const current = run.adventure?.scenes?.[run.sceneId];
-    if (run.ending && current && !shouldShowTitle(current)) run.ending.title = null;
     return suppressHiddenSceneEntries(run);
   }
 
