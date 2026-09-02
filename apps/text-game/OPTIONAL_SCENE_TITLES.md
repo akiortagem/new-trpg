@@ -52,7 +52,18 @@ The equivalent explicit form is:
   "type": "scene",
   "title": null,
   "text": ["The conversation continues without a title card."],
-  "choices": []
+  "choices": [
+    {
+      "id": "continue",
+      "label": "Continue",
+      "resolution": "automatic",
+      "reason": "Continue the scene.",
+      "outcome": {
+        "text": "The party moves on.",
+        "next": "lower-road"
+      }
+    }
+  ]
 }
 ```
 
