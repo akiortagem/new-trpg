@@ -1,0 +1,5 @@
+.vn-stage-title:empty,
+.battle-head h2:empty,
+.ending h2:empty {
+  display: none;
+}
