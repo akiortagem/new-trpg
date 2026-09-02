@@ -2,6 +2,7 @@
   const api=factory();
   if(typeof module!=="undefined"&&module.exports)module.exports=api;
   root.SpeakerVisuals=api;
+  if(root.TextGameCore)api.installValidation(root.TextGameCore);
   if(root.document&&root.TextGameCore&&root.document.querySelector("#app"))api.installRuntime(root);
 })(typeof globalThis!=="undefined"?globalThis:this,function(){
   "use strict";
@@ -62,21 +63,26 @@
     return assignments;
   }
 
+  function installValidation(core){
+    if(core.__speakerVisualValidationInstalled)return;
+    core.__speakerVisualValidationInstalled=true;
+    const originalValidate=core.validateAdventure.bind(core);
+    core.validateAdventure=function validateAdventureWithSpeakerVisuals(adventure){
+      return[...originalValidate(adventure),...inspectAdventure(adventure).errors];
+    };
+  }
+
   function installRuntime(root){
     if(root.__speakerVisualsRuntimeInstalled)return;
     root.__speakerVisualsRuntimeInstalled=true;
     const doc=root.document,core=root.TextGameCore;
+    installValidation(core);
     let assignments={},lastSpeaker=null;
 
     const setAdventure=adventure=>{assignments=assignmentsForAdventure(adventure);lastSpeaker=null;};
-    const originalValidate=core.validateAdventure.bind(core);
-    core.validateAdventure=function validateAdventureWithSpeakerVisuals(adventure){
-      const errors=originalValidate(adventure),visualErrors=inspectAdventure(adventure).errors;
-      if(!errors.length&&!visualErrors.length)setAdventure(adventure);
-      return[...errors,...visualErrors];
-    };
     const originalCreateRun=core.createRun.bind(core);
     core.createRun=function createRunWithSpeakerVisuals(mainCharacter,adventure,...rest){
+      const visualErrors=inspectAdventure(adventure).errors;if(visualErrors.length)throw new Error(visualErrors.join("\n"));
       setAdventure(adventure);
       return originalCreateRun(mainCharacter,adventure,...rest);
     };
@@ -123,5 +129,5 @@
     return{setAdventure,decorate,disconnect:()=>observer.disconnect()};
   }
 
-  return{PALETTE,hashSpeaker,dialoguePassages,inspectAdventure,assignmentsForAdventure,installRuntime};
+  return{PALETTE,hashSpeaker,dialoguePassages,inspectAdventure,assignmentsForAdventure,installValidation,installRuntime};
 });
