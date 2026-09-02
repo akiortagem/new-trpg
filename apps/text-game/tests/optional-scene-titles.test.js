@@ -57,6 +57,16 @@ test("showTitle false preserves the editor title but suppresses ordinary scene p
   assert.equal(String(Core.scene(run).title),"","the renderer receives no player-facing title despite the authored title remaining intact");
 });
 
+test("showTitle false clears a titled ending reached through an ordinary choice",()=>{
+  const value=adventure();value.scenes.done.showTitle=false;
+  const run=Core.createRun(character(),value,()=>0.5);
+  Core.resolveChoice(run,"branch");Core.resolveChoice(run,"finish");
+  assert.equal(run.sceneId,"done");assert.equal(run.status,"victory");
+  assert.equal(run.adventure.scenes.done.title,"Done","the authored ending title remains in adventure data");
+  assert.equal(run.ending.title,null,"the player-facing ending title is cleared after the transition");
+  assert.ok(run.log.some(entry=>entry.type==="scene.entered.hidden"&&entry.data?.sceneId==="done"&&entry.data?.titleHidden===true));
+});
+
 test("titleless scene transitions remain backward-compatible",()=>{
   const value=adventure();value.scenes.branch.title=null;
   const run=Core.createRun(character(),value,()=>0.5);Core.resolveChoice(run,"branch");
