@@ -1,0 +1,6 @@
+.speaker-vi-field{display:grid;grid-template-columns:minmax(8rem,auto) minmax(0,1fr);gap:.65rem;align-items:center;margin:.55rem 0 .75rem;font:12px/1.3 system-ui,sans-serif;color:var(--muted)}
+.speaker-vi-field select{width:100%}
+.speaker-vi-label{display:flex;align-items:center;gap:.45rem;font-weight:700}
+.speaker-vi-swatch{width:.72rem;height:.72rem;border-radius:50%;border:1px solid var(--line);background:var(--vi-accent,#777);box-shadow:0 0 0 2px rgba(255,255,255,.03)}
+.speaker-vi-swatch[data-identity="automatic"]{background:linear-gradient(135deg,#777 0 45%,transparent 45% 55%,#aaa 55% 100%)}
+.card.vi-teal,.card.vi-amber,.card.vi-rose,.card.vi-violet,.card.vi-green,.card.vi-blue,.card.vi-coral,.card.vi-mint{box-shadow:inset 4px 0 var(--vi-accent)}
