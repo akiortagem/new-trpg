@@ -40,3 +40,28 @@ test('shared validation preserves existing errors and adds visual identity error
   assert.equal(errors[0],'base error');
   assert.match(errors[1],/visualIdentity/);
 });
+
+test('runtime builds assignments from the materialized adventure',()=>{
+  const source=adventure([{speaker:'{{main.name}}',text:'A',visualIdentity:'teal'}]);
+  const core={
+    validateAdventure:()=>[],
+    createRun(mainCharacter,value){
+      const prepared=JSON.parse(JSON.stringify(value));
+      prepared.scenes.start.text[0].speaker=mainCharacter.name;
+      return{adventure:prepared};
+    }
+  };
+  const app={};
+  const document={
+    querySelector(selector){return selector==='#app'?app:null},
+    querySelectorAll(){return[]},
+    addEventListener(){}
+  };
+  class MutationObserver{observe(){}disconnect(){}}
+  const root={document,TextGameCore:core,MutationObserver,localStorage:{getItem(){return null}}};
+  const runtime=Visuals.installRuntime(root);
+  const created=core.createRun({name:'Mira'},source);
+  assert.equal(created.adventure.scenes.start.text[0].speaker,'Mira');
+  assert.equal(runtime.getAssignments().Mira,'teal');
+  assert.equal(runtime.getAssignments()['{{main.name}}'],undefined);
+});
