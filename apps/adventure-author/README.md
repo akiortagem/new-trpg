@@ -12,7 +12,7 @@ Dialogue passages include a **Visual identity** dropdown. The choice belongs to 
 
 - `$main` is not embedded; the text-game player selects it when starting a run.
 - Companion character JSON imported into the editor is copied into `party` so the finished adventure has no external companion dependency.
-- Scene, combat, and ending titles are optional. Raw JSON may omit `title` or set it to `null`; clearing a scene-title field in the editor also leaves that node titleless. The adventure-level title remains required.
+- Ordinary scenes, combats, and endings expose **Show title in game** independently from the title text. The optional `showTitle` field defaults to `true`; turning the toggle off writes `showTitle: false` while keeping the authored `title` visible on the graph. Turning it back on removes the override. Existing raw JSON may still omit `title` or set it to `null`; the adventure-level title remains required.
 - Speaker visual identities are stored as an optional `visualIdentity` property on existing dialogue passage objects, so adventure schema version 2 does not change and older adventures remain valid.
 - Node coordinates are optional under top-level `editor` metadata.
 - Existing adventures without coordinates are auto-laid out on open.
@@ -25,7 +25,7 @@ Validation never blocks saving. Runtime-invalid issues are Errors; design concer
 
 The game is still designed around one substantial combat in an adventure, but the runtime accepts multiple combat nodes for authors who deliberately need them.
 
-Speaker VI values are validated by the shared text-game compatibility layer. Unknown palette tokens and conflicting authored identities for the same speaker are invalid.
+`showTitle`, when present on a scene, combat, or ending, must be a boolean. Speaker VI values are validated by the shared text-game compatibility layer. Unknown palette tokens and conflicting authored identities for the same speaker are invalid.
 
 ## Tests
 
@@ -35,4 +35,4 @@ The authoring model and text-game compatibility layer have dependency-free Node 
 node --test apps/adventure-author/tests/*.test.js
 ```
 
-See [`SPEC.md`](SPEC.md) for the implementation contract and authoring decisions, [`../text-game/OPTIONAL_SCENE_TITLES.md`](../text-game/OPTIONAL_SCENE_TITLES.md) for titleless scene behavior, and [`../text-game/SPEAKER_VISUAL_IDENTITIES.md`](../text-game/SPEAKER_VISUAL_IDENTITIES.md) for dialogue visual identities.
+See [`SPEC.md`](SPEC.md) for the implementation contract and authoring decisions, [`../text-game/OPTIONAL_SCENE_TITLES.md`](../text-game/OPTIONAL_SCENE_TITLES.md) for scene-title visibility behavior, and [`../text-game/SPEAKER_VISUAL_IDENTITIES.md`](../text-game/SPEAKER_VISUAL_IDENTITIES.md) for dialogue visual identities.

@@ -21,6 +21,19 @@
     return value == null || (typeof value === "string" && !value.trim());
   }
 
+  function shouldShowTitle(sceneValue) {
+    return Boolean(sceneValue) && sceneValue.showTitle !== false && !isTitleless(sceneValue.title);
+  }
+
+  function titleVisibilityErrors(adventure) {
+    const errors = [];
+    for (const [sceneId, sceneValue] of Object.entries(isObject(adventure?.scenes) ? adventure.scenes : {})) {
+      if (!isObject(sceneValue) || sceneValue.showTitle === undefined) continue;
+      if (typeof sceneValue.showTitle !== "boolean") errors.push(`adventure.scenes.${sceneId}.showTitle: must be a boolean when present`);
+    }
+    return errors;
+  }
+
   function materializeAdventure(value, mainName, key = null) {
     if (typeof value === "string") return templateTextKeys.has(key) ? value.replace(/\{\{\s*main\.name\s*\}\}/g, () => mainName) : value;
     if (Array.isArray(value)) return value.map(item => materializeAdventure(item, mainName, key));
@@ -37,50 +50,58 @@
     return safe;
   }
 
-  function scrubTitlelessCombatStart(run) {
+  function hiddenTitleData(entry, current) {
+    return {
+      ...(entry?.data || {}),
+      titleHidden:true,
+      ...(isTitleless(current?.title) ? {titleless:true} : {})
+    };
+  }
+
+  function scrubHiddenCombatTitle(run) {
     const combat = run?.combat;
     const current = combat?.sceneId ? run.adventure?.scenes?.[combat.sceneId] : null;
-    if (!combat || !current || !isTitleless(current.title)) return;
+    if (!combat || !current || shouldShowTitle(current)) return;
 
     combat.name = "";
     const message = `Combat begins. ${combat.ambush ? "Enemies" : "PCs"} act first.`;
     for (const entry of combat.log || []) {
       if (entry?.type !== "combat.started") continue;
       entry.message = message;
-      entry.data = {...(entry.data || {}), titleless:true};
+      entry.data = hiddenTitleData(entry, current);
     }
 
     const runEntry = [...(run.log || [])].reverse().find(entry => entry?.type === "combat.combat.started");
     if (runEntry) {
       runEntry.message = message;
-      runEntry.data = {...(runEntry.data || {}), sceneId:combat.sceneId, titleless:true};
+      runEntry.data = {...hiddenTitleData(runEntry, current), sceneId:combat.sceneId};
     }
   }
 
-  function suppressTitlelessSceneEntries(run) {
+  function suppressHiddenSceneEntries(run) {
     if (!run || !Array.isArray(run.log) || !isObject(run.adventure?.scenes)) return run;
-    scrubTitlelessCombatStart(run);
+    const currentScene = run.adventure.scenes[run.sceneId];
+    if (run.ending && currentScene?.type === "ending" && !shouldShowTitle(currentScene)) run.ending.title = null;
+    scrubHiddenCombatTitle(run);
     for (const entry of run.log) {
       if (entry?.type !== "scene.entered") continue;
       const sceneId = entry.data?.sceneId;
       const current = sceneId ? run.adventure.scenes[sceneId] : null;
-      if (!current || !isTitleless(current.title)) continue;
+      if (!current || shouldShowTitle(current)) continue;
       entry.type = "scene.entered.hidden";
       entry.message = `Entered ${sceneId}.`;
-      entry.data = {...(entry.data || {}), titleless:true};
+      entry.data = hiddenTitleData(entry, current);
     }
     return run;
   }
 
   function restoreRuntimeTitles(run, adventure, mainName) {
     run.adventure = materializeAdventure(adventure, mainName);
-    const current = run.adventure?.scenes?.[run.sceneId];
-    if (run.ending && current && isTitleless(current.title)) run.ending.title = null;
-    return suppressTitlelessSceneEntries(run);
+    return suppressHiddenSceneEntries(run);
   }
 
   core.validateAdventure = function validateAdventureWithOptionalSceneTitles(adventure) {
-    return validateAdventure(validationSafeAdventure(adventure));
+    return [...validateAdventure(validationSafeAdventure(adventure)), ...titleVisibilityErrors(adventure)];
   };
 
   core.createRun = function createRunWithOptionalSceneTitles(mainCharacter, adventure, random = Math.random) {
@@ -90,19 +111,26 @@
 
   core.scene = function currentSceneWithOptionalTitle(run) {
     const current = scene(run);
-    if (!current || !isTitleless(current.title)) return current;
+    if (!current || shouldShowTitle(current)) return current;
     return {...current, title:blankPresentationTitle};
   };
 
   for (const name of runMutators) {
     const original = core[name];
     if (typeof original !== "function") continue;
-    core[name] = function titlelessAwareMutation(run, ...args) {
+    core[name] = function titleVisibilityAwareMutation(run, ...args) {
       const result = original(run, ...args);
-      suppressTitlelessSceneEntries(run);
+      suppressHiddenSceneEntries(run);
       return result;
     };
   }
 
-  globalThis.TextGameOptionalSceneTitles = {isTitleless, suppressTitlelessSceneEntries, scrubTitlelessCombatStart};
+  globalThis.TextGameOptionalSceneTitles = {
+    isTitleless,
+    shouldShowTitle,
+    suppressHiddenSceneEntries,
+    scrubHiddenCombatTitle,
+    suppressTitlelessSceneEntries:suppressHiddenSceneEntries,
+    scrubTitlelessCombatStart:scrubHiddenCombatTitle
+  };
 })();

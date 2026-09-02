@@ -27,53 +27,99 @@ for(const variant of ["omitted","null","blank"]){
   });
 }
 
-test("titleless scene transitions keep narration but suppress the title presentation event",()=>{
-  const value=adventure();value.scenes.branch.title=null;
+test("showTitle is optional and defaults to true",()=>{
+  const value=adventure();
+  assert.deepEqual(Core.validateAdventure(value),[]);
   const run=Core.createRun(character(),value,()=>0.5);Core.resolveChoice(run,"branch");
-  assert.equal(run.sceneId,"branch");
-  assert.equal(run.adventure.scenes.branch.title,null,"the runtime preserves the authored contract value");
-  assert.ok(run.log.some(entry=>entry.type==="scene.entered.hidden"&&entry.data?.sceneId==="branch"&&entry.data?.titleless===true));
-  assert.ok(!run.log.some(entry=>entry.type==="scene.entered"&&entry.data?.sceneId==="branch"));
-  assert.ok(run.log.some(entry=>entry.type==="story.narration"&&entry.message==="Branch narration."));
-  assert.equal(String(Core.scene(run).title),"","the renderer receives a truthy presentation title that stringifies to empty, preventing the adventure-title fallback");
-});
-
-test("titled scenes retain the existing presentation behavior",()=>{
-  const run=Core.createRun(character(),adventure(),()=>0.5);Core.resolveChoice(run,"branch");
   assert.ok(run.log.some(entry=>entry.type==="scene.entered"&&entry.data?.sceneId==="branch"));
   assert.equal(Core.scene(run).title,"Branch");
 });
 
-test("a titleless starting combat removes compatibility titles from headers and logs",()=>{
+test("showTitle accepts booleans and rejects other present values",()=>{
+  const visible=adventure();visible.scenes.branch.showTitle=true;
+  const hidden=adventure();hidden.scenes.branch.showTitle=false;
+  assert.deepEqual(Core.validateAdventure(visible),[]);assert.deepEqual(Core.validateAdventure(hidden),[]);
+  for(const invalid of [null,"false",0,{}]){
+    const value=adventure();value.scenes.branch.showTitle=invalid;
+    assert.ok(Core.validateAdventure(value).some(error=>error.includes("adventure.scenes.branch.showTitle: must be a boolean when present")));
+  }
+});
+
+test("showTitle false preserves the editor title but suppresses ordinary scene presentation",()=>{
+  const value=adventure();value.scenes.branch.showTitle=false;
+  const run=Core.createRun(character(),value,()=>0.5);Core.resolveChoice(run,"branch");
+  assert.equal(run.sceneId,"branch");
+  assert.equal(run.adventure.scenes.branch.title,"Branch","the authored title remains available as editor metadata");
+  assert.equal(run.adventure.scenes.branch.showTitle,false);
+  assert.ok(run.log.some(entry=>entry.type==="scene.entered.hidden"&&entry.data?.sceneId==="branch"&&entry.data?.titleHidden===true&&entry.data?.titleless!==true));
+  assert.ok(!run.log.some(entry=>entry.type==="scene.entered"&&entry.data?.sceneId==="branch"));
+  assert.ok(run.log.some(entry=>entry.type==="story.narration"&&entry.message==="Branch narration."));
+  assert.equal(String(Core.scene(run).title),"","the renderer receives no player-facing title despite the authored title remaining intact");
+});
+
+test("showTitle false clears a titled ending reached through an ordinary choice",()=>{
+  const value=adventure();value.scenes.done.showTitle=false;
+  const run=Core.createRun(character(),value,()=>0.5);
+  Core.resolveChoice(run,"branch");Core.resolveChoice(run,"finish");
+  assert.equal(run.sceneId,"done");assert.equal(run.status,"victory");
+  assert.equal(run.adventure.scenes.done.title,"Done","the authored ending title remains in adventure data");
+  assert.equal(run.ending.title,null,"the player-facing ending title is cleared after the transition");
+  assert.ok(run.log.some(entry=>entry.type==="scene.entered.hidden"&&entry.data?.sceneId==="done"&&entry.data?.titleHidden===true));
+});
+
+test("titleless scene transitions remain backward-compatible",()=>{
+  const value=adventure();value.scenes.branch.title=null;
+  const run=Core.createRun(character(),value,()=>0.5);Core.resolveChoice(run,"branch");
+  assert.equal(run.adventure.scenes.branch.title,null);
+  assert.ok(run.log.some(entry=>entry.type==="scene.entered.hidden"&&entry.data?.sceneId==="branch"&&entry.data?.titleless===true&&entry.data?.titleHidden===true));
+  assert.ok(!run.log.some(entry=>entry.type==="scene.entered"&&entry.data?.sceneId==="branch"));
+  assert.equal(String(Core.scene(run).title),"");
+});
+
+test("showTitle false suppresses a titled starting combat and titled ending without deleting either title",()=>{
+  const value=adventure();value.startScene="fight";value.scenes.fight=combatScene("Bridge Ambush");value.scenes.fight.showTitle=false;value.scenes.done.showTitle=false;
+  const run=Core.createRun(character(),value,()=>0.5);
+  assert.equal(run.adventure.scenes.fight.title,"Bridge Ambush");assert.equal(run.combat.name,"");
+  assert.equal(run.combat.log.find(entry=>entry.type==="combat.started")?.message,"Combat begins. PCs act first.");
+  assert.equal(run.log.find(entry=>entry.type==="combat.combat.started")?.message,"Combat begins. PCs act first.");
+  assert.ok(!run.log.some(entry=>entry.message.includes("Bridge Ambush")),"hidden combat titles do not leak into exported events");
+  assert.ok(run.log.some(entry=>entry.type==="scene.entered.hidden"&&entry.data?.sceneId==="fight"&&entry.data?.titleHidden===true));
+  run.combat.enemies[0].alive=false;Core.checkCombatEnd(run,()=>0.5);
+  assert.equal(run.status,"victory");assert.equal(run.adventure.scenes.done.title,"Done");assert.equal(run.ending.title,null);
+  assert.ok(run.log.some(entry=>entry.type==="scene.entered.hidden"&&entry.data?.sceneId==="done"&&entry.data?.titleHidden===true));
+});
+
+test("showTitle false also suppresses a titled combat entered later",()=>{
+  const value=adventure();value.scenes.start.choices[0].outcome.next="fight";value.scenes.fight=combatScene("Lower Gate");value.scenes.fight.showTitle=false;
+  const run=Core.createRun(character(),value,()=>0.5);Core.resolveChoice(run,"branch");
+  assert.equal(run.sceneId,"fight");assert.equal(run.adventure.scenes.fight.title,"Lower Gate");assert.equal(run.combat.name,"");
+  assert.equal(run.combat.log.find(entry=>entry.type==="combat.started")?.message,"Combat begins. PCs act first.");
+  const exportedStart=[...run.log].reverse().find(entry=>entry.type==="combat.combat.started");
+  assert.equal(exportedStart?.message,"Combat begins. PCs act first.");
+  assert.ok(!run.log.some(entry=>entry.message.includes("Lower Gate")));
+});
+
+test("titleless starting combat still removes compatibility titles from headers and logs",()=>{
   const value=adventure();value.startScene="fight";value.scenes.fight=combatScene(null);value.scenes.done.title=null;
   const run=Core.createRun(character(),value,()=>0.5);
   assert.equal(run.combat.name,"");
   assert.equal(run.combat.log.find(entry=>entry.type==="combat.started")?.message,"Combat begins. PCs act first.");
   assert.equal(run.log.find(entry=>entry.type==="combat.combat.started")?.message,"Combat begins. PCs act first.");
-  assert.ok(!run.log.some(entry=>/Compatibility title for fight/.test(entry.message)),"the validation-only title never reaches exported events");
-  assert.ok(run.log.some(entry=>entry.type==="scene.entered.hidden"&&entry.data?.sceneId==="fight"));
+  assert.ok(!run.log.some(entry=>/Compatibility title for fight/.test(entry.message)));
   run.combat.enemies[0].alive=false;Core.checkCombatEnd(run,()=>0.5);
   assert.equal(run.status,"victory");assert.equal(run.ending.title,null);
-  assert.ok(run.log.some(entry=>entry.type==="scene.entered.hidden"&&entry.data?.sceneId==="done"));
 });
 
-test("a later titleless combat removes null from player-facing and exported combat logs",()=>{
-  const value=adventure();value.scenes.start.choices[0].outcome.next="fight";value.scenes.fight=combatScene(null);
-  const run=Core.createRun(character(),value,()=>0.5);Core.resolveChoice(run,"branch");
-  assert.equal(run.sceneId,"fight");assert.equal(run.combat.name,"");
-  assert.equal(run.combat.log.find(entry=>entry.type==="combat.started")?.message,"Combat begins. PCs act first.");
-  const exportedStart=[...run.log].reverse().find(entry=>entry.type==="combat.combat.started");
-  assert.equal(exportedStart?.message,"Combat begins. PCs act first.");
-  assert.doesNotMatch(exportedStart?.message||"",/^null begins\./);
-});
-
-test("both browser apps load the optional-title contract layer and titleless header CSS",()=>{
+test("browser apps expose title visibility while keeping graph labels independent",()=>{
   const textRoot=path.resolve(__dirname,"..");
   const authorRoot=path.resolve(textRoot,"..","adventure-author");
   const textHtml=fs.readFileSync(path.join(textRoot,"index.html"),"utf8");
   const authorHtml=fs.readFileSync(path.join(authorRoot,"index.html"),"utf8");
+  const authorApp=fs.readFileSync(path.join(authorRoot,"app.js"),"utf8");
   const css=fs.readFileSync(path.join(textRoot,"optional-scene-titles.css"),"utf8");
   assert.match(textHtml,/optional-scene-titles\.js/);assert.match(textHtml,/optional-scene-titles\.css/);
   assert.match(authorHtml,/\.\.\/text-game\/optional-scene-titles\.js/);
+  assert.match(authorApp,/data-show-title/);assert.match(authorApp,/Show title in game/);assert.match(authorApp,/s\.showTitle!==false/);assert.match(authorApp,/delete s\.showTitle/);
+  assert.match(authorApp,/s\.title\|\|id/,"graph nodes continue to use the authored title even when in-game presentation is disabled");
   assert.match(css,/\.vn-stage-title:empty/);assert.match(css,/\.battle-head h2:empty/);assert.match(css,/\.ending h2:empty/);
 });

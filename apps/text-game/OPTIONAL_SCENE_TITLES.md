@@ -1,32 +1,26 @@
-# Optional Scene Titles
+# Scene Title Visibility
 
-Adventure-level `title` remains required. Titles on individual objects under `scenes` are optional.
+Adventure-level `title` remains required. Individual ordinary scenes, combat scenes, and endings may carry an authored `title` independently from whether that title is shown to the player.
 
-This applies to ordinary scenes, combat scenes, and endings. An author may:
+Each scene object may optionally define:
 
-- omit `title` entirely;
-- set `"title": null`; or
-- leave the title blank in Adventure Author.
+```json
+"showTitle": false
+```
 
-A non-empty string keeps the existing title presentation, including `{{main.name}}` substitution.
+`showTitle` must be a boolean when present. If it is omitted, it defaults to `true`.
 
-## Runtime behavior
+This separates the node's authoring label from its in-game presentation. An author can keep a descriptive title visible on the Adventure Author graph while suppressing the title interruption during play.
 
-A titleless scene has no title presentation. The engine does not substitute the adventure title or the scene id as a player-facing title.
+## Recommended usage
 
-- **Ordinary scene:** no separate Scene/title message is inserted into the visual-novel flow. The scene's passages and choices continue normally, including the existing first-visit behavior.
-- **Combat scene:** the battle title heading is omitted. The combat itself starts normally.
-- **Ending:** the ending title heading is omitted. Outcome and ending text are still shown.
-
-Scene ids remain structural identifiers. They may still appear in developer-facing information such as the event log or save metadata; they are not promoted into an in-game scene title.
-
-## Authoring examples
-
-A branching scene can omit the field so its prose flows directly from the preceding outcome:
+Keep a useful `title` on the node for authoring, then set `showTitle` to `false` when the scene should flow directly from the previous scene or outcome:
 
 ```json
 {
   "type": "scene",
+  "title": "Mira Takes the Lower Road",
+  "showTitle": false,
   "text": [
     { "speaker": "Mira", "text": "Then we take the lower road." }
   ],
@@ -45,30 +39,28 @@ A branching scene can omit the field so its prose flows directly from the preced
 }
 ```
 
-The equivalent explicit form is:
+Adventure Author exposes this as **Show title in game** on ordinary scenes, combats, and endings. Turning it off does not alter the title shown on the authoring graph.
 
-```json
-{
-  "type": "scene",
-  "title": null,
-  "text": ["The conversation continues without a title card."],
-  "choices": [
-    {
-      "id": "continue",
-      "label": "Continue",
-      "resolution": "automatic",
-      "reason": "Continue the scene.",
-      "outcome": {
-        "text": "The party moves on.",
-        "next": "lower-road"
-      }
-    }
-  ]
-}
-```
+Turning the toggle back on removes the explicit override and returns the scene to the default `showTitle: true` behavior.
 
-Adventure Author treats a cleared scene-title field as titleless, so authors do not need to edit raw JSON merely to suppress a title.
+## Runtime behavior
+
+When `showTitle` is `true` or omitted and the scene has a non-empty title, existing title presentation is unchanged, including `{{main.name}}` substitution.
+
+When `showTitle` is `false`:
+
+- **Ordinary scene:** no separate Scene/title message is inserted into the visual-novel flow. Passages and choices continue normally.
+- **Combat scene:** the battle title heading is omitted. The combat-start log uses neutral wording rather than leaking the authored title.
+- **Ending:** the ending title heading is omitted. Outcome and ending text are still shown.
+
+The authored `title` remains in adventure data and remains available to authoring tools. Scene ids also remain structural identifiers and are not promoted into a player-facing title.
+
+## Titleless compatibility
+
+The previous optional-title behavior remains valid for existing adventures. A scene may still omit `title`, use `"title": null`, or provide a blank title. Such a scene has nothing to display regardless of `showTitle`.
+
+For new authored content, `showTitle: false` is preferred when the scene needs an editor-visible label but no in-game title.
 
 ## Compatibility
 
-This is a backward-compatible relaxation of adventure schema version 2. Existing adventures with titles behave as before, so the schema version does not change.
+This is a backward-compatible extension of adventure schema version 2. Existing adventures omit `showTitle`, so they default to the same visible-title behavior they already had. Adventures that intentionally used omitted, `null`, or blank titles continue to suppress title presentation. The schema version does not change.
