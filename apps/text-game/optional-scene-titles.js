@@ -37,8 +37,29 @@
     return safe;
   }
 
+  function scrubTitlelessCombatStart(run) {
+    const combat = run?.combat;
+    const current = combat?.sceneId ? run.adventure?.scenes?.[combat.sceneId] : null;
+    if (!combat || !current || !isTitleless(current.title)) return;
+
+    combat.name = "";
+    const message = `Combat begins. ${combat.ambush ? "Enemies" : "PCs"} act first.`;
+    for (const entry of combat.log || []) {
+      if (entry?.type !== "combat.started") continue;
+      entry.message = message;
+      entry.data = {...(entry.data || {}), titleless:true};
+    }
+
+    const runEntry = [...(run.log || [])].reverse().find(entry => entry?.type === "combat.combat.started");
+    if (runEntry) {
+      runEntry.message = message;
+      runEntry.data = {...(runEntry.data || {}), sceneId:combat.sceneId, titleless:true};
+    }
+  }
+
   function suppressTitlelessSceneEntries(run) {
     if (!run || !Array.isArray(run.log) || !isObject(run.adventure?.scenes)) return run;
+    scrubTitlelessCombatStart(run);
     for (const entry of run.log) {
       if (entry?.type !== "scene.entered") continue;
       const sceneId = entry.data?.sceneId;
@@ -54,7 +75,6 @@
   function restoreRuntimeTitles(run, adventure, mainName) {
     run.adventure = materializeAdventure(adventure, mainName);
     const current = run.adventure?.scenes?.[run.sceneId];
-    if (run.combat && run.combat.sceneId === run.sceneId && current && isTitleless(current.title)) run.combat.name = "";
     if (run.ending && current && isTitleless(current.title)) run.ending.title = null;
     return suppressTitlelessSceneEntries(run);
   }
@@ -84,5 +104,5 @@
     };
   }
 
-  globalThis.TextGameOptionalSceneTitles = {isTitleless, suppressTitlelessSceneEntries};
+  globalThis.TextGameOptionalSceneTitles = {isTitleless, suppressTitlelessSceneEntries, scrubTitlelessCombatStart};
 })();
