@@ -8,6 +8,21 @@ function adventure(){return{kind:'adventure',scenes:{a:{type:'scene',text:[
   {speaker:'Ardan',text:'Two'}
 ]},b:{type:'scene',text:[{speaker:'Mira',text:'Three'}]}}}}
 
+function openableAdventure(id='accepted'){
+  return{
+    schemaVersion:2,
+    kind:'adventure',
+    id,
+    title:'Test',
+    startScene:'a',
+    initialState:{flags:{},counters:{}},
+    clocks:{},
+    party:[],
+    enemies:[],
+    scenes:{a:{type:'scene',text:[{speaker:'Mira',text:'One'}],choices:[]}}
+  };
+}
+
 test('author override applies to every dialogue passage for the same speaker',()=>{
   const value=adventure(),overrides=new Map([['Mira','violet']]);
   assert.equal(AuthorVisuals.applySpeakerIdentityOverrides(value,overrides),2);
@@ -32,4 +47,26 @@ test('authored overrides are collected by speaker',()=>{
   const map=AuthorVisuals.authoredOverrides(value);
   assert.equal(map.get('Mira'),'rose');
   assert.equal(map.has('Ardan'),false);
+});
+
+test('rejected parsed adventures do not replace the active authoring adventure',()=>{
+  const model={
+    createAdventureDraft:()=>openableAdventure('new'),
+    openableShapeIssues:value=>value.id==='bad-shape'?['bad shape']:[]
+  };
+  const json={parse:JSON.parse};
+  const document={querySelector(){return null},querySelectorAll(){return[]},addEventListener(){}};
+  const root={document,AdventureAuthorModel:model,JSON:json};
+  const runtime=AuthorVisuals.installAuthoring(root);
+  const accepted=json.parse(JSON.stringify(openableAdventure('accepted')));
+  assert.equal(runtime.getAdventure(),accepted);
+
+  json.parse(JSON.stringify({...openableAdventure('unknown-field'),unexpected:true}));
+  assert.equal(runtime.getAdventure(),accepted);
+
+  json.parse(JSON.stringify({...openableAdventure('wrong-schema'),schemaVersion:99}));
+  assert.equal(runtime.getAdventure(),accepted);
+
+  json.parse(JSON.stringify(openableAdventure('bad-shape')));
+  assert.equal(runtime.getAdventure(),accepted);
 });
