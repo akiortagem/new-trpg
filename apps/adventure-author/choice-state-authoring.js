@@ -5,6 +5,7 @@
   if(!editor)return;
 
   const OPERATOR_LABELS={equals:"is",notEquals:"is not",gte:"is at least",lte:"is at most"};
+  const MODE_LABELS={direct:"One condition",all:"All conditions",any:"Any condition"};
 
   function enhanceChoiceAvailability(){
     if(!editor.classList.contains("choice-editor"))return;
@@ -20,6 +21,11 @@
         const titleRow=section.querySelector(".section-title");
         titleRow?.insertAdjacentElement("afterend",hint);
       }
+      const mode=section.querySelector("select[data-when-mode]");
+      if(mode){
+        for(const option of mode.options)if(MODE_LABELS[option.value])option.textContent=MODE_LABELS[option.value];
+        mode.setAttribute("aria-label","How availability conditions combine");
+      }
       section.querySelectorAll("select[data-cond-op]").forEach(select=>{
         for(const option of select.options)if(OPERATOR_LABELS[option.value])option.textContent=OPERATOR_LABELS[option.value];
         select.setAttribute("aria-label","State comparison");
@@ -31,6 +37,17 @@
       });
     }
   }
+
+  editor.addEventListener("click",event=>{
+    if(!event.target.closest?.("[data-add-condition]"))return;
+    queueMicrotask(()=>{
+      const mode=editor.querySelector("select[data-when-mode]");
+      const conditions=editor.querySelectorAll("select[data-cond-path]");
+      if(mode?.value!=="all"||conditions.length!==1)return;
+      mode.value="direct";
+      mode.dispatchEvent(new Event("change",{bubbles:true}));
+    });
+  });
 
   new MutationObserver(enhanceChoiceAvailability).observe(editor,{childList:true,subtree:true});
   enhanceChoiceAvailability();
