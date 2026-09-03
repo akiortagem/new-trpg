@@ -6,26 +6,23 @@
   "use strict";
 
   const COMPARATORS=["equals","notEquals","gte","lte"];
+  const STATE_ROOTS=new Set(["flags","counters","quest","clocks"]);
   const installed=new WeakSet();
   const object=value=>Boolean(value)&&typeof value==="object"&&!Array.isArray(value);
   const has=(value,key)=>Object.prototype.hasOwnProperty.call(value,key);
   const error=(path,message)=>`${path}: ${message}`;
 
-  function conditionPathIssue(adventure,path){
+  function conditionPathIssue(path){
     if(typeof path!=="string"||!path.trim())return"must be a non-empty state path";
     const parts=path.split(".");
     if(parts.some(part=>!part||["__proto__","constructor","prototype"].includes(part)))return"contains an invalid path segment";
-    if(path==="quest.elapsedDays")return null;
-    if((parts[0]==="flags"||parts[0]==="counters")&&parts.length>=2)return null;
-    if(parts[0]==="clocks"&&parts.length===3&&parts[2]==="filled"){
-      return Object.prototype.hasOwnProperty.call(adventure?.clocks||{},parts[1])?null:`references unknown clock ${parts[1]}`;
-    }
-    return"must reference flags.*, counters.*, quest.elapsedDays, or clocks.<id>.filled";
+    if(parts.length<2||!STATE_ROOTS.has(parts[0]))return"must begin with flags., counters., quest., or clocks.";
+    return null;
   }
 
-  function validateCondition(adventure,condition,path,errors){
+  function validateCondition(condition,path,errors){
     if(!object(condition)){errors.push(error(path,"must be an object"));return;}
-    const pathIssue=conditionPathIssue(adventure,condition.path);
+    const pathIssue=conditionPathIssue(condition.path);
     if(pathIssue)errors.push(error(`${path}.path`,pathIssue));
     const present=COMPARATORS.filter(key=>has(condition,key));
     if(present.length!==1){errors.push(error(path,"must contain exactly one of equals, notEquals, gte, or lte"));return;}
@@ -34,15 +31,15 @@
     if((comparator==="equals"||comparator==="notEquals")&&(typeof value==="object"&&value!==null))errors.push(error(`${path}.${comparator}`,"must be a string, number, boolean, or null"));
   }
 
-  function validateWhen(adventure,when,path,errors){
-    if(Array.isArray(when)){when.forEach((condition,index)=>validateCondition(adventure,condition,`${path}[${index}]`,errors));return;}
+  function validateWhen(when,path,errors){
+    if(Array.isArray(when)){when.forEach((condition,index)=>validateCondition(condition,`${path}[${index}]`,errors));return;}
     if(!object(when)){errors.push(error(path,"must be a condition object, an array of conditions, or an all/any group"));return;}
     const grouped=["all","any"].filter(key=>has(when,key));
-    if(!grouped.length){validateCondition(adventure,when,path,errors);return;}
+    if(!grouped.length){validateCondition(when,path,errors);return;}
     if(grouped.length!==1){errors.push(error(path,"must use either all or any, not both"));return;}
     const key=grouped[0];
     if(!Array.isArray(when[key])){errors.push(error(`${path}.${key}`,"must be an array"));return;}
-    when[key].forEach((condition,index)=>validateCondition(adventure,condition,`${path}.${key}[${index}]`,errors));
+    when[key].forEach((condition,index)=>validateCondition(condition,`${path}.${key}[${index}]`,errors));
   }
 
   function validateChoiceStateConditions(adventure){
@@ -50,7 +47,7 @@
     for(const [sceneId,scene] of Object.entries(adventure?.scenes||{})){
       if(scene?.type!=="scene"||!Array.isArray(scene.choices))continue;
       scene.choices.forEach((choice,index)=>{
-        if(choice?.when!=null)validateWhen(adventure,choice.when,`adventure.scenes.${sceneId}.choices[${index}].when`,errors);
+        if(choice?.when!=null)validateWhen(choice.when,`adventure.scenes.${sceneId}.choices[${index}].when`,errors);
       });
     }
     return errors;
@@ -72,5 +69,5 @@
     return core;
   }
 
-  return{COMPARATORS,validateChoiceStateConditions,install};
+  return{COMPARATORS,STATE_ROOTS,validateChoiceStateConditions,install};
 });
