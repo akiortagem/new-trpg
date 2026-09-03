@@ -20,3 +20,4 @@ label.inline>[data-show-title]:focus-visible{outline:0;box-shadow:0 0 0 3px #82b
 .inspector:has(>.inspector-heading+ .field+label.inline)>.inspector-heading{grid-row:1}
 .inspector:has(>.inspector-heading+ .field+label.inline)>.inspector-heading+ .field{grid-column:1;grid-row:2}
 .inspector:has(>.inspector-heading+ .field+label.inline)>.inspector-heading+ .field+label.inline{grid-column:2;grid-row:2;align-self:end;margin:0 0 15px}
+@media (forced-colors: active){label.inline>[data-show-title]:focus-visible{outline:2px solid Highlight;outline-offset:2px;box-shadow:none}}
