@@ -25,14 +25,16 @@ If `flags.vaultOpen` is not exactly `true`, the choice is unavailable. If `when`
 
 ## State paths
 
-Choice conditions may read:
+A condition reads from the current run state. Safe paths begin with one of these roots:
 
-- `flags.<name>`
-- `counters.<name>`
-- `quest.elapsedDays`
-- `clocks.<clock-id>.filled`
+- `flags.`
+- `counters.`
+- `quest.`
+- `clocks.`
 
-Flags and counters are normally declared under `initialState`. Effects may change them during play. Clock conditions must reference a clock declared by the adventure.
+The authoring app offers the state values it manages directly: authored flags, authored counters, `quest.elapsedDays`, and each declared clock's `clocks.<clock-id>.filled` value. Existing adventures may also use other safe values exposed under those same runtime roots, such as `quest.remainingDays`.
+
+Unsafe object-prototype path segments are invalid.
 
 ## Comparisons
 
