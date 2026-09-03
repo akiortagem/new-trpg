@@ -63,17 +63,24 @@ test("choice state conditions are validated as part of the adventure contract",(
   errors=Core.validateAdventure(value);
   assert.ok(errors.some(message=>message.includes("must contain exactly one")));
 
-  value.scenes.start.choices[0].when={path:"clocks.missing.filled",gte:1};
+  value.scenes.start.choices[0].when={path:"secret.value",equals:true};
   errors=Core.validateAdventure(value);
-  assert.ok(errors.some(message=>message.includes("references unknown clock missing")));
+  assert.ok(errors.some(message=>message.includes("must begin with flags")));
 
   value.scenes.start.choices[0].when={path:"counters.reputation",gte:"2"};
   errors=Core.validateAdventure(value);
   assert.ok(errors.some(message=>message.includes("must be a finite number")));
 });
 
+test("safe quest and clock state paths remain compatible",()=>{
+  const value=adventure();
+  value.scenes.start.choices[0].when={path:"quest.remainingDays",gte:1};
+  value.scenes.start.choices[1].when={path:"clocks.search.filled",equals:0};
+  assert.deepEqual(Core.validateAdventure(value),[]);
+});
+
 test("starting a run rejects malformed choice conditions even though core.js predates the hardening layer",()=>{
   const value=adventure();
   value.scenes.start.choices[0].when={path:"secret.value",equals:true};
-  assert.throws(()=>Core.createRun(character(),value),/must reference flags/);
+  assert.throws(()=>Core.createRun(character(),value),/must begin with flags/);
 });
