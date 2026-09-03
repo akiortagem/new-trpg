@@ -8,7 +8,7 @@ To connect nodes, drag an outcome's output port to the input port on another nod
 
 Dialogue passages include a **Visual identity** dropdown. The choice belongs to the speaker name: assigning an identity to one `Mira` passage applies it to every `Mira` passage in the adventure. **Automatic** removes the authored override and lets the text game assign a stable palette entry at runtime.
 
-Each ordinary-scene choice has an **Availability** section. Authors can make the choice available only while a flag, counter, quest-day value, or clock progress matches an authored condition. The most direct form is `state path` **is** `required value`; multiple conditions may use All or Any. Removing every condition makes the choice always available.
+Each ordinary-scene choice has an **Availability** section. Authors can make the choice available only while a flag, counter, quest value, or clock value matches an authored condition. The most direct form is `state path` **is** `required value`; multiple conditions may use All or Any. Removing every condition makes the choice always available.
 
 ## File behavior
 
@@ -28,7 +28,7 @@ Validation never blocks saving. Runtime-invalid issues are Errors; design concer
 
 The game is still designed around one substantial combat in an adventure, but the runtime accepts multiple combat nodes for authors who deliberately need them.
 
-Choice conditions must name a supported state path and exactly one comparison. `equals` and `notEquals` accept scalar JSON values; `gte` and `lte` require finite numbers. Clock conditions must reference a declared clock. `showTitle`, when present on a scene, combat, or ending, must be a boolean. Speaker VI values are validated by the shared text-game compatibility layer. Unknown palette tokens and conflicting authored identities for the same speaker are invalid.
+Choice conditions must name a safe state path under `flags`, `counters`, `quest`, or `clocks` and exactly one comparison. `equals` and `notEquals` accept scalar JSON values; `gte` and `lte` require finite numbers. `showTitle`, when present on a scene, combat, or ending, must be a boolean. Speaker VI values are validated by the shared text-game compatibility layer. Unknown palette tokens and conflicting authored identities for the same speaker are invalid.
 
 ## Tests
 
