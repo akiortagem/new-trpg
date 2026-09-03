@@ -72,6 +72,18 @@ test("choice state conditions are validated as part of the adventure contract",(
   assert.ok(errors.some(message=>message.includes("must be a finite number")));
 });
 
+test("grouped conditions reject direct condition fields on the same object",()=>{
+  const value=adventure();
+  value.scenes.start.choices[0].when={
+    all:[{path:"flags.permission",equals:true}],
+    path:"flags.vault",
+    equals:"open"
+  };
+  const errors=Core.validateAdventure(value);
+  assert.ok(errors.some(message=>message.includes("grouped conditions cannot also define direct condition fields")));
+  assert.throws(()=>Core.createRun(character(),value),/grouped conditions cannot also define direct condition fields/);
+});
+
 test("safe quest and clock state paths remain compatible",()=>{
   const value=adventure();
   value.scenes.start.choices[0].when={path:"quest.remainingDays",gte:1};
