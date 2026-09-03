@@ -4,6 +4,8 @@ Visual authoring tool for adventure JSON consumed by `../text-game`.
 
 Open `index.html` through the same static server used for the repository apps. The editor supports creating and opening adventures, graph-based scene flow, structured scene/check editing, state and clocks, combat battlefields, enemy ability templates, validation, raw JSON editing, undo/redo, speaker visual-identity assignment, and direct file overwrite through the browser File System Access API when available.
 
+On the main graph, single-click a node to select it. Narrative scenes open for editing only after a double-click. Press **Delete** to delete the selected node when focus is not inside an editable control or modal. Node selection is exposed as its own interaction state so additional selected-node actions can be added without changing the scene-open gesture. The main canvas scrollbars are hidden; navigate the extended canvas with middle-mouse dragging or other scrolling input.
+
 To connect nodes, drag an outcome's output port to the input port on another node. Dragging an already connected output rewires it; use **Disconnect** beside the outcome in the inspector to remove its current destination.
 
 Dialogue passages include a **Visual identity** dropdown. The choice belongs to the speaker name: assigning an identity to one `Mira` passage applies it to every `Mira` passage in the adventure. **Automatic** removes the authored override and lets the text game assign a stable palette entry at runtime.
