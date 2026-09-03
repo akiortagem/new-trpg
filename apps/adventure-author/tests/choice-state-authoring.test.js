@@ -28,10 +28,18 @@ test("choice editor exposes state path, comparison, and required value controls"
   assert.match(appSource,/function statePaths\(\)/);
 });
 
-test("authoring app loads shared condition validation and availability labels",()=>{
+test("authoring app loads shared condition validation and clear availability labels",()=>{
   assert.match(indexSource,/\.\.\/text-game\/choice-state-conditions\.js/);
   assert.match(indexSource,/choice-state-authoring\.js/);
   assert.match(enhancementSource,/Availability/);
   assert.match(enhancementSource,/The choice is shown only while its state condition matches/);
   assert.match(enhancementSource,/equals:"is"/);
+  assert.match(enhancementSource,/direct:"One condition"/);
+});
+
+test("the first authored condition is simplified to a direct state gate",()=>{
+  assert.match(enhancementSource,/data-add-condition/);
+  assert.match(enhancementSource,/conditions\.length!==1/);
+  assert.match(enhancementSource,/mode\.value="direct"/);
+  assert.match(enhancementSource,/dispatchEvent\(new Event\("change"/);
 });
