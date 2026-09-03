@@ -36,6 +36,8 @@
     if(!object(when)){errors.push(error(path,"must be a condition object, an array of conditions, or an all/any group"));return;}
     const grouped=["all","any"].filter(key=>has(when,key));
     if(!grouped.length){validateCondition(when,path,errors);return;}
+    const directFields=["path",...COMPARATORS].filter(key=>has(when,key));
+    if(directFields.length)errors.push(error(path,`grouped conditions cannot also define direct condition fields: ${directFields.join(", ")}`));
     if(grouped.length!==1){errors.push(error(path,"must use either all or any, not both"));return;}
     const key=grouped[0];
     if(!Array.isArray(when[key])){errors.push(error(`${path}.${key}`,"must be an array"));return;}
