@@ -8,10 +8,13 @@ To connect nodes, drag an outcome's output port to the input port on another nod
 
 Dialogue passages include a **Visual identity** dropdown. The choice belongs to the speaker name: assigning an identity to one `Mira` passage applies it to every `Mira` passage in the adventure. **Automatic** removes the authored override and lets the text game assign a stable palette entry at runtime.
 
+Each ordinary-scene choice has an **Availability** section. Authors can make the choice available only while a flag, counter, quest value, or clock value matches an authored condition. The most direct form is `state path` **is** `required value`; multiple conditions may use All or Any. Removing every condition makes the choice always available.
+
 ## File behavior
 
 - `$main` is not embedded; the text-game player selects it when starting a run.
 - Companion character JSON imported into the editor is copied into `party` so the finished adventure has no external companion dependency.
+- Choice availability is stored in the existing optional `when` field. Hidden choices are not shown by the game and cannot be selected until their condition matches. Adventure schema version 2 does not change.
 - Ordinary scenes, combats, and endings expose **Show title in game** independently from the title text. The optional `showTitle` field defaults to `true`; turning the toggle off writes `showTitle: false` while keeping the authored `title` visible on the graph. Turning it back on removes the override. Existing raw JSON may still omit `title` or set it to `null`; the adventure-level title remains required.
 - Speaker visual identities are stored as an optional `visualIdentity` property on existing dialogue passage objects, so adventure schema version 2 does not change and older adventures remain valid.
 - Node coordinates are optional under top-level `editor` metadata.
@@ -25,7 +28,7 @@ Validation never blocks saving. Runtime-invalid issues are Errors; design concer
 
 The game is still designed around one substantial combat in an adventure, but the runtime accepts multiple combat nodes for authors who deliberately need them.
 
-`showTitle`, when present on a scene, combat, or ending, must be a boolean. Speaker VI values are validated by the shared text-game compatibility layer. Unknown palette tokens and conflicting authored identities for the same speaker are invalid.
+Choice conditions must name a safe state path under `flags`, `counters`, `quest`, or `clocks` and exactly one comparison. `equals` and `notEquals` accept scalar JSON values; `gte` and `lte` require finite numbers. `showTitle`, when present on a scene, combat, or ending, must be a boolean. Speaker VI values are validated by the shared text-game compatibility layer. Unknown palette tokens and conflicting authored identities for the same speaker are invalid.
 
 ## Tests
 
@@ -35,4 +38,4 @@ The authoring model and text-game compatibility layer have dependency-free Node 
 node --test apps/adventure-author/tests/*.test.js
 ```
 
-See [`SPEC.md`](SPEC.md) for the implementation contract and authoring decisions, [`../text-game/OPTIONAL_SCENE_TITLES.md`](../text-game/OPTIONAL_SCENE_TITLES.md) for scene-title visibility behavior, and [`../text-game/SPEAKER_VISUAL_IDENTITIES.md`](../text-game/SPEAKER_VISUAL_IDENTITIES.md) for dialogue visual identities.
+See [`SPEC.md`](SPEC.md) for the implementation contract and authoring decisions, [`../text-game/CHOICE_STATE_CONDITIONS.md`](../text-game/CHOICE_STATE_CONDITIONS.md) for state-gated choice behavior, [`../text-game/OPTIONAL_SCENE_TITLES.md`](../text-game/OPTIONAL_SCENE_TITLES.md) for scene-title visibility behavior, and [`../text-game/SPEAKER_VISUAL_IDENTITIES.md`](../text-game/SPEAKER_VISUAL_IDENTITIES.md) for dialogue visual identities.
