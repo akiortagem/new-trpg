@@ -23,8 +23,8 @@
 
   function twistMode(choice) {
     if (!isObject(choice) || choice.resolution !== "check") return "not-check";
-    const hasTwist = hasOwn(choice, "twist") && choice.twist != null;
-    const hasPreview = hasOwn(choice, "twistPreview") && choice.twistPreview != null;
+    const hasTwist = hasOwn(choice, "twist");
+    const hasPreview = hasOwn(choice, "twistPreview");
     if (hasTwist && hasPreview) return "enabled";
     if (!hasTwist && !hasPreview) return "disabled";
     return "partial";
