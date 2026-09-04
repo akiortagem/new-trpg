@@ -78,6 +78,18 @@ test("twist and twistPreview must be authored or omitted together",()=>{
   }
 });
 
+test("null twist fields are invalid rather than treated as omission",()=>{
+  const bothNull=checkChoice();bothNull.twist=null;bothNull.twistPreview=null;
+  const nullOutcomeOnly=checkChoice();nullOutcomeOnly.twist=null;delete nullOutcomeOnly.twistPreview;
+  const nullPreviewOnly=checkChoice();nullPreviewOnly.twistPreview=null;delete nullPreviewOnly.twist;
+  for(const choice of [bothNull,nullOutcomeOnly,nullPreviewOnly]){
+    assert.notEqual(OptionalTwists.twistMode(choice),"disabled");
+    const errors=Core.validateAdventure(adventure(choice));
+    assert.ok(errors.length>0,"present null twist fields must remain visible to validation");
+  }
+  assert.throws(()=>Core.createRun(character(),adventure(bothNull),()=>0.5),/twist|twistPreview/);
+});
+
 test("browser apps load the optional twist contract before their app code",()=>{
   const textRoot=path.resolve(__dirname,"..");
   const authorRoot=path.resolve(textRoot,"..","adventure-author");
