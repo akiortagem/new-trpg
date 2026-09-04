@@ -12,8 +12,9 @@
   const object=value=>Boolean(value)&&typeof value==="object"&&!Array.isArray(value);
   const plainClone=value=>Array.isArray(value)?value.map(plainClone):object(value)?Object.fromEntries(Object.entries(value).filter(([key])=>key!=="toJSON").map(([key,item])=>[key,plainClone(item)])):value;
   const hasOwn=(value,key)=>Boolean(value)&&Object.prototype.hasOwnProperty.call(value,key);
+  const twistPresence=choice=>({hasTwist:hasOwn(choice,"twist"),hasPreview:hasOwn(choice,"twistPreview")});
 
-  function hasAuthoredTwist(choice){return object(choice)&&choice.resolution==="check"&&hasOwn(choice,"twist")&&choice.twist!=null&&hasOwn(choice,"twistPreview")&&choice.twistPreview!=null;}
+  function hasAuthoredTwist(choice){const {hasTwist,hasPreview}=twistPresence(choice);return object(choice)&&choice.resolution==="check"&&hasTwist&&choice.twist!=null&&hasPreview&&choice.twistPreview!=null;}
   function isPlaceholder(choice){return Boolean(choice?.twist?.[PLACEHOLDER_MARKER]);}
   function isTwistEnabled(choice){return hasAuthoredTwist(choice)&&!isPlaceholder(choice);}
 
@@ -47,8 +48,7 @@
 
   function hydrateChoice(choice){
     if(!object(choice)||choice.resolution!=="check")return choice;
-    const hasTwist=hasOwn(choice,"twist")&&choice.twist!=null;
-    const hasPreview=hasOwn(choice,"twistPreview")&&choice.twistPreview!=null;
+    const {hasTwist,hasPreview}=twistPresence(choice);
     if(!hasTwist&&!hasPreview)disableTwist(choice);
     return choice;
   }
@@ -65,8 +65,10 @@
       if(scene?.type!=="scene"||!Array.isArray(scene.choices))continue;
       scene.choices.forEach((choice,index)=>{
         if(!object(choice)||choice.resolution!=="check")return;
-        const hasTwist=hasOwn(choice,"twist")&&choice.twist!=null,hasPreview=hasOwn(choice,"twistPreview")&&choice.twistPreview!=null;
-        if(hasTwist!==hasPreview)issues.push(`scenes.${sceneId}.choices[${index}]: twist and twistPreview must either both be present or both be omitted.`);
+        const {hasTwist,hasPreview}=twistPresence(choice),base=`scenes.${sceneId}.choices[${index}]`;
+        if(hasTwist!==hasPreview)issues.push(`${base}: twist and twistPreview must either both be present or both be omitted.`);
+        if(hasTwist&&!object(choice.twist))issues.push(`${base}.twist must be an object when present.`);
+        if(hasPreview&&(typeof choice.twistPreview!=="string"||!choice.twistPreview.trim()))issues.push(`${base}.twistPreview must be a non-empty string when present.`);
       });
     }
     return issues;
