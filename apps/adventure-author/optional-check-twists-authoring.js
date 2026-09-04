@@ -59,6 +59,19 @@
     return adventure;
   }
 
+  function partialTwistIssues(adventure){
+    const issues=[];
+    for(const [sceneId,scene] of Object.entries(object(adventure?.scenes)?adventure.scenes:{})){
+      if(scene?.type!=="scene"||!Array.isArray(scene.choices))continue;
+      scene.choices.forEach((choice,index)=>{
+        if(!object(choice)||choice.resolution!=="check")return;
+        const hasTwist=hasOwn(choice,"twist")&&choice.twist!=null,hasPreview=hasOwn(choice,"twistPreview")&&choice.twistPreview!=null;
+        if(hasTwist!==hasPreview)issues.push(`scenes.${sceneId}.choices[${index}]: twist and twistPreview must either both be present or both be omitted.`);
+      });
+    }
+    return issues;
+  }
+
   function serializeAdventure(adventure){
     const value=plainClone(adventure);
     if(!object(value?.scenes))return value;
@@ -83,7 +96,7 @@
 
     Model.createAdventureDraft=function createAdventureDraftWithOptionalTwists(...args){currentAdventure=hydrateAdventure(createAdventureDraft(...args));return currentAdventure;};
     Model.migrateEnemyCatalog=function migrateEnemyCatalogWithOptionalTwists(adventure){currentAdventure=hydrateAdventure(migrateEnemyCatalog(adventure));return currentAdventure;};
-    Model.openableShapeIssues=function openableShapeIssuesWithOptionalTwists(adventure){return openableShapeIssues(hydrateAdventure(clone(adventure)));};
+    Model.openableShapeIssues=function openableShapeIssuesWithOptionalTwists(adventure){return [...openableShapeIssues(hydrateAdventure(clone(adventure))),...partialTwistIssues(adventure)];};
 
     function currentChoice(){
       const choiceId=document.querySelector("#sceneDialogId")?.textContent?.trim();
@@ -187,5 +200,5 @@
     return{serialize:()=>withSerializedAdventure(()=>JSON.stringify(currentAdventure,null,2))};
   }
 
-  return{PLACEHOLDER_MARKER,BACKUP_KEY,hasAuthoredTwist,isTwistEnabled,disableTwist,enableTwist,hydrateChoice,hydrateAdventure,serializeAdventure,install};
+  return{PLACEHOLDER_MARKER,BACKUP_KEY,hasAuthoredTwist,isTwistEnabled,disableTwist,enableTwist,hydrateChoice,hydrateAdventure,partialTwistIssues,serializeAdventure,install};
 });
