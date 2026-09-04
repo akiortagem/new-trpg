@@ -48,13 +48,34 @@ test("re-enabling a check loaded without a twist creates an editable default",()
   assert.deepEqual(checkChoice.twist,{text:"The goal succeeds with a complication.",next:""});
 });
 
+test("partial twist pairs are rejected by the authoring open contract",()=>{
+  const missingPreview=choice();delete missingPreview.twistPreview;
+  const missingOutcome=choice();delete missingOutcome.twist;
+  for(const checkChoice of [missingPreview,missingOutcome]){
+    const issues=OptionalTwists.partialTwistIssues(adventure(checkChoice));
+    assert.equal(issues.length,1);
+    assert.match(issues[0],/twist and twistPreview must either both be present or both be omitted/);
+  }
+});
+
 test("serialized adventures never contain authoring backup or compatibility markers",()=>{
   const checkChoice=choice();OptionalTwists.disableTwist(checkChoice);
-  const saved=OptionalTwists.serializeAdventure(adventure(checkChoice));
+  const value=adventure(checkChoice);
+  const saved=OptionalTwists.serializeAdventure(value);
   const serialized=JSON.stringify(saved);
   assert.doesNotMatch(serialized,/__optionalTwistBackup/);
   assert.doesNotMatch(serialized,/__optionalTwistPlaceholder/);
   assert.doesNotMatch(serialized,/__optionalTwistDisabled/);
+});
+
+test("the temporary toJSON save hook serializes without recursion",()=>{
+  const checkChoice=choice();OptionalTwists.disableTwist(checkChoice);
+  const value=adventure(checkChoice);
+  Object.defineProperty(value,"toJSON",{configurable:true,enumerable:false,value:()=>OptionalTwists.serializeAdventure(value)});
+  const serialized=JSON.stringify(value);
+  assert.doesNotMatch(serialized,/__optionalTwist/);
+  assert.doesNotMatch(serialized,/"twistPreview"/);
+  assert.doesNotMatch(serialized,/"twist"/);
 });
 
 test("authoring source exposes the optional twist control and strips disabled fields on save",()=>{
@@ -65,4 +86,5 @@ test("authoring source exposes the optional twist control and strips disabled fi
   assert.match(source,/delete choice\.twistPreview/);
   assert.match(source,/#saveBtn,#jsonBtn/);
   assert.match(source,/twistPort\.hidden=!isTwistEnabled\(choice\)/);
+  assert.match(source,/#addCheck,#addAutomatic/);
 });
