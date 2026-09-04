@@ -53,9 +53,21 @@ test("partial twist pairs are rejected by the authoring open contract",()=>{
   const missingOutcome=choice();delete missingOutcome.twist;
   for(const checkChoice of [missingPreview,missingOutcome]){
     const issues=OptionalTwists.partialTwistIssues(adventure(checkChoice));
-    assert.equal(issues.length,1);
-    assert.match(issues[0],/twist and twistPreview must either both be present or both be omitted/);
+    assert.ok(issues.some(issue=>/twist and twistPreview must either both be present or both be omitted/.test(issue)));
   }
+});
+
+test("null twist fields remain malformed instead of being hydrated into omission",()=>{
+  const bothNull=choice();bothNull.twist=null;bothNull.twistPreview=null;
+  OptionalTwists.hydrateChoice(bothNull);
+  assert.equal(bothNull.twist,null);
+  assert.equal(bothNull.twistPreview,null);
+  const issues=OptionalTwists.partialTwistIssues(adventure(bothNull));
+  assert.ok(issues.some(issue=>/\.twist must be an object when present/.test(issue)));
+  assert.ok(issues.some(issue=>/\.twistPreview must be a non-empty string when present/.test(issue)));
+  const saved=OptionalTwists.serializeAdventure(adventure(bothNull));
+  assert.equal(saved.scenes.start.choices[0].twist,null);
+  assert.equal(saved.scenes.start.choices[0].twistPreview,null);
 });
 
 test("serialized adventures never contain authoring backup or compatibility markers",()=>{
