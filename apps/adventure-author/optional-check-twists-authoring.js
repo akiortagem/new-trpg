@@ -10,6 +10,7 @@
   const BACKUP_KEY="__optionalTwistBackup";
   const clone=value=>JSON.parse(JSON.stringify(value));
   const object=value=>Boolean(value)&&typeof value==="object"&&!Array.isArray(value);
+  const plainClone=value=>Array.isArray(value)?value.map(plainClone):object(value)?Object.fromEntries(Object.entries(value).filter(([key])=>key!=="toJSON").map(([key,item])=>[key,plainClone(item)])):value;
   const hasOwn=(value,key)=>Boolean(value)&&Object.prototype.hasOwnProperty.call(value,key);
 
   function hasAuthoredTwist(choice){return object(choice)&&choice.resolution==="check"&&hasOwn(choice,"twist")&&choice.twist!=null&&hasOwn(choice,"twistPreview")&&choice.twistPreview!=null;}
@@ -59,7 +60,7 @@
   }
 
   function serializeAdventure(adventure){
-    const value=clone(adventure);
+    const value=plainClone(adventure);
     if(!object(value?.scenes))return value;
     for(const scene of Object.values(value.scenes)){
       if(scene?.type!=="scene"||!Array.isArray(scene.choices))continue;
@@ -107,6 +108,7 @@
     function reopenChoice(sceneId,index){
       const node=document.querySelector(`.node[data-id="${CSS.escape(sceneId)}"]`);
       if(!node)return;
+      node.click();
       node.click();
       document.querySelector(`#sceneEditor [data-choice="${index}"]`)?.click();
     }
@@ -160,8 +162,8 @@
     }
 
     document.addEventListener("click",event=>{
-      const choiceButton=event.target.closest?.("#sceneEditor [data-choice]");
-      if(choiceButton){const sceneId=document.querySelector("#sceneDialogId")?.textContent?.trim();if(sceneId&&currentAdventure?.scenes?.[sceneId]?.type==="scene")activeSceneId=sceneId;}
+      const sceneChoiceAction=event.target.closest?.("#sceneEditor [data-choice],#addCheck,#addAutomatic");
+      if(sceneChoiceAction){const sceneId=document.querySelector("#sceneDialogId")?.textContent?.trim();if(sceneId&&currentAdventure?.scenes?.[sceneId]?.type==="scene")activeSceneId=sceneId;}
       if(event.target.closest?.("#saveBtn,#jsonBtn")){
         if(!currentAdventure)return;
         const prior=currentAdventure.toJSON;
