@@ -1,0 +1,68 @@
+"use strict";
+const test=require("node:test");
+const assert=require("node:assert/strict");
+const fs=require("node:fs");
+const path=require("node:path");
+const OptionalTwists=require("../optional-check-twists-authoring.js");
+
+function choice(){
+  return{
+    id:"check",label:"Check",resolution:"check",actor:{mode:"fixed",id:"$main"},
+    check:{goal:"Goal",approach:"Approach",baseTN:40,attributes:["int","dex"],skill:"Awareness",situationalModifiers:[]},
+    success:{text:"Success",next:"success"},failure:{text:"Failure",next:"failure"},
+    twistPreview:"Old preview",twist:{text:"Old twist",next:"twist",effects:[{type:"set",path:"flags.cost",value:true}]}
+  };
+}
+
+function adventure(checkChoice=choice()){
+  return{schemaVersion:2,kind:"adventure",id:"author-test",title:"Author Test",startScene:"start",initialState:{flags:{},counters:{}},clocks:{},party:[],scenes:{start:{type:"scene",title:"Start",text:["Start"],choices:[checkChoice]}}};
+}
+
+test("hydrating a serialized no-twist check gives the editor a non-serialized placeholder",()=>{
+  const checkChoice=choice();delete checkChoice.twist;delete checkChoice.twistPreview;
+  OptionalTwists.hydrateChoice(checkChoice);
+  assert.equal(OptionalTwists.isTwistEnabled(checkChoice),false);
+  assert.equal(checkChoice.twist[OptionalTwists.PLACEHOLDER_MARKER],true);
+  const saved=OptionalTwists.serializeAdventure(adventure(checkChoice));
+  assert.equal(Object.prototype.hasOwnProperty.call(saved.scenes.start.choices[0],"twist"),false);
+  assert.equal(Object.prototype.hasOwnProperty.call(saved.scenes.start.choices[0],"twistPreview"),false);
+});
+
+test("disabling and re-enabling preserves authored twist content during the editing session",()=>{
+  const checkChoice=choice();
+  OptionalTwists.disableTwist(checkChoice);
+  assert.equal(OptionalTwists.isTwistEnabled(checkChoice),false);
+  assert.equal(checkChoice.twist[OptionalTwists.PLACEHOLDER_MARKER],true);
+  OptionalTwists.enableTwist(checkChoice);
+  assert.equal(OptionalTwists.isTwistEnabled(checkChoice),true);
+  assert.equal(checkChoice.twistPreview,"Old preview");
+  assert.deepEqual(checkChoice.twist,{text:"Old twist",next:"twist",effects:[{type:"set",path:"flags.cost",value:true}]});
+});
+
+test("re-enabling a check loaded without a twist creates an editable default",()=>{
+  const checkChoice=choice();delete checkChoice.twist;delete checkChoice.twistPreview;
+  OptionalTwists.hydrateChoice(checkChoice);
+  OptionalTwists.enableTwist(checkChoice);
+  assert.equal(OptionalTwists.isTwistEnabled(checkChoice),true);
+  assert.equal(checkChoice.twistPreview,"The goal succeeds, but there is a complication.");
+  assert.deepEqual(checkChoice.twist,{text:"The goal succeeds with a complication.",next:""});
+});
+
+test("serialized adventures never contain authoring backup or compatibility markers",()=>{
+  const checkChoice=choice();OptionalTwists.disableTwist(checkChoice);
+  const saved=OptionalTwists.serializeAdventure(adventure(checkChoice));
+  const serialized=JSON.stringify(saved);
+  assert.doesNotMatch(serialized,/__optionalTwistBackup/);
+  assert.doesNotMatch(serialized,/__optionalTwistPlaceholder/);
+  assert.doesNotMatch(serialized,/__optionalTwistDisabled/);
+});
+
+test("authoring source exposes the optional twist control and strips disabled fields on save",()=>{
+  const root=path.resolve(__dirname,"..");
+  const source=fs.readFileSync(path.join(root,"optional-check-twists-authoring.js"),"utf8");
+  assert.match(source,/Offer Success with a Twist after a failed roll/);
+  assert.match(source,/delete choice\.twist/);
+  assert.match(source,/delete choice\.twistPreview/);
+  assert.match(source,/#saveBtn,#jsonBtn/);
+  assert.match(source,/twistPort\.hidden=!isTwistEnabled\(choice\)/);
+});
