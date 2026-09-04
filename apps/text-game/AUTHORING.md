@@ -225,13 +225,17 @@ Use a selectable actor when the player may choose among eligible party members:
 
 Use Base TN 60 for a Challenging task, 40 for a Heroic task, or 25 for an Extremely Heroic task. Values between 25 and 60 are valid. The final TN is calculated as written in the rules. A TN of 100 or more succeeds without rolling. A TN of 0 or less fails without rolling. The latter is not a failed check, so it does not offer Success with a Twist.
 
-Every rolled check must provide three authored outcomes:
+Every rolled check must provide two authored outcomes:
 
 - `success`: the declared goal is achieved.
 - `failure`: the goal is not achieved and the situation changes.
-- `twist`: the goal is achieved and the authored complication occurs.
 
-`twistPreview` is the vague disclosure shown after a failed roll. The full `twist.text` is not shown until the player accepts.
+Success with a Twist is optional for each check. To enable it, author both:
+
+- `twistPreview`: the vague disclosure shown after a failed roll; and
+- `twist`: the outcome in which the goal is achieved and the authored complication occurs.
+
+The full `twist.text` is not shown until the player accepts. To make failure final for a particular check, omit both `twistPreview` and `twist`. A check containing only one of the two fields is invalid.
 
 ```json
 {
@@ -265,6 +269,35 @@ Every rolled check must provide three authored outcomes:
   }
 }
 ```
+
+A check without Success with a Twist uses the same shape but ends after `failure`:
+
+```json
+{
+  "id": "hold-gate",
+  "label": "Hold the gate shut.",
+  "resolution": "check",
+  "actor": { "mode": "fixed", "id": "$main" },
+  "check": {
+    "goal": "Keep the riders out of the courtyard.",
+    "approach": "Brace the damaged crossbar.",
+    "baseTN": 40,
+    "attributes": ["str", "end"],
+    "skill": "Athletics",
+    "situationalModifiers": []
+  },
+  "success": {
+    "text": "The crossbar holds until the riders turn away.",
+    "next": "courtyard"
+  },
+  "failure": {
+    "text": "The crossbar splits and the riders flood into the courtyard.",
+    "next": "courtyard-overrun"
+  }
+}
+```
+
+On a rolled failure for this second form, the game applies `failure` immediately instead of opening the failure-or-twist decision.
 
 An outcome may use `"end": "victory"` or `"end": "defeat"` instead of `next`. Ending scenes are usually clearer when several branches converge.
 
@@ -488,7 +521,7 @@ The following file is a format example, not an included playable adventure. It c
       "dodge": 30,
       "threat": 25,
       "abilities": [
-        { "id": "strike", "name": "Strike", "kind": "attack", "ap": 1, "stamina": 0, "mana": 0, "power": 40, "minRange": 0, "maxRange": 0, "attackBonus": 0, "tags": ["Physical"] }
+        { "id": "strike", "name": "Strike", "kind": "attack", "ap": 1, "stamina": 0, "mana": 0,"power": 40, "minRange": 0, "maxRange": 0, "attackBonus": 0, "tags": ["Physical"] }
       ]
     }
   ],
@@ -592,7 +625,7 @@ The following file is a format example, not an included playable adventure. It c
 - Every companion has a unique id and a complete character definition.
 - Every certain action is explicitly marked `automatic`; the app is not expected to infer it.
 - Every check exposes a Base TN from 25 to 60, exactly two attributes, one skill, and all situational modifiers.
-- Every rolled check authors Success, Failure, Success with a Twist, and a vague twist preview.
+- Every rolled check authors Success and Failure. A check that offers Success with a Twist also authors both a vague `twistPreview` and a `twist` outcome; a check with final failure omits both.
 - Failed investigation never removes the information required to continue unless that consequence ends the adventure intentionally.
 - Quest delays state their time cost before the player chooses them.
 - The adventure contains exactly one combat scene.
