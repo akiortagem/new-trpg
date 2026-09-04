@@ -44,7 +44,7 @@ There is no privileged main path. Any branch may be valid. Ordinary narrative lo
 Edges are derived from runtime `next` fields:
 
 - automatic choice: one output;
-- check: success, failure, twist outputs;
+- check: success and failure outputs, plus a twist output only when that check authors Success with a Twist;
 - combat: victory and defeat outputs.
 
 Each node has an input port, and each authored outcome has its own output port. Authors connect nodes by dragging a wire from an outcome's output port to the destination node's input port. Dropping a connected output onto another input rewires that outcome. The inspector reports the current destination and can disconnect it, but it does not provide an alternate node selector.
@@ -130,8 +130,11 @@ Check choice:
 - skill;
 - situational modifiers;
 - optional progress clock;
-- success, failure and twist outcomes;
-- twist preview.
+- success and failure outcomes;
+- **Offer Success with a Twist after a failed roll** control, enabled for newly created checks;
+- twist preview and twist outcome only while that control is enabled.
+
+The serialized contract uses no additional public flag. A check with both `twistPreview` and `twist` offers Success with a Twist. A check with both fields omitted resolves a rolled failure directly to `failure`. Supplying only one of the two fields is invalid. When the author disables the option, the editor hides the Twist output and omits both fields from saved JSON. Re-enabling during the same editing session restores the previously authored twist when possible.
 
 The app does not warn merely because `$main` may lack a skill. Instead, author guidance warns against making an irreplaceable path depend on a skill that an arbitrary main character may not possess, and recommends including a companion with the required capability when that capability must matter.
 
@@ -284,6 +287,7 @@ Runtime-invalid or structurally broken material, including:
 - invalid referenced clocks/zones/actors;
 - missing PC starting zones;
 - combat cycles that return to the same combat;
+- a check containing only one of `twist` or `twistPreview`;
 - non-boolean `showTitle` values when the field is present;
 - invalid ability data.
 
@@ -316,6 +320,8 @@ The editor accepts only the exact adventure schema version it understands. It mu
 - the file contains structural fields the editor cannot safely round-trip.
 
 The error should explain that the adventure schema or authoring app may be out of date. It must not silently drop unknown data.
+
+Adventure schema version remains 2 for optional Success with a Twist. Existing checks already containing `twist` and `twistPreview` retain the previous behavior without migration.
 
 ## Raw JSON mode
 
@@ -358,6 +364,7 @@ The text-game validator must allow multiple combat scenes. The one-combat design
 - Scene titles remain visible as graph labels while **Show title in game** can independently suppress title presentation at runtime.
 - Choice destinations can be wired through structured destination controls and visibly render as edges.
 - Scene passages and automatic/check choices can be authored without raw JSON.
+- A check can remove Success with a Twist; the Twist editor/output disappear and saved JSON omits both twist fields while success and failure remain intact.
 - State declarations, conditions, effects and clocks have structured controls.
 - Combat battlefield zones/links, PC starts, enemies, agnostic ability presets and interactions can be authored.
 - Multiple combats save successfully but produce a warning.
