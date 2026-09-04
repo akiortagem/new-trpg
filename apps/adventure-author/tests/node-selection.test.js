@@ -40,7 +40,7 @@ test("node hit testing ignores connection ports",()=>{
   assert.equal(Selection.nodeFromEvent({target:portTarget},canvas),null);
 });
 
-test("browser integration blocks first scene open, allows second click, and wires Delete",async()=>{
+test("browser integration suppresses single-click modal open, opens after second click render, and wires Delete",async()=>{
   const listeners={canvas:{},doc:{}};
   const selected={dataset:{id:"scene-a"},classList:{contains:name=>name==="scene"}};
   const target={closest:selector=>selector===".node"?selected:null};
@@ -70,6 +70,7 @@ test("browser integration blocks first scene open, allows second click, and wire
   };
 
   Selection.initialize(doc);
+
   listeners.canvas.click({target,timeStamp:1000});
   sceneDialog.showModal();
   await Promise.resolve();
@@ -78,7 +79,9 @@ test("browser integration blocks first scene open, allows second click, and wire
 
   listeners.canvas.click({target,timeStamp:1200});
   sceneDialog.showModal();
-  assert.equal(modalOpens,1);
+  assert.equal(modalOpens,0,"the app's normal render-time showModal call remains suppressed");
+  await Promise.resolve();
+  assert.equal(modalOpens,1,"the double-click handler opens the modal after render completes");
 
   sceneDialog.open=false;
   listeners.doc.keydown({key:"Delete",ctrlKey:false,metaKey:false,altKey:false,target:{tagName:"DIV"},preventDefault(){prevented++;}});
