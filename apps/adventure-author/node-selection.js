@@ -54,7 +54,6 @@
     const tracker=createActivationTracker();
     const nativeShowModal=typeof sceneDialog.showModal==="function"?sceneDialog.showModal.bind(sceneDialog):null;
     const defer=typeof queueMicrotask==="function"?queueMicrotask:fn=>setTimeout(fn,0);
-    let allowSceneOpen=false;
     let pointer=null;
     let ignoreNextClickId=null;
 
@@ -73,9 +72,18 @@
       inspector.innerHTML=`<div class="inspector-heading"><h2>Scene</h2><span class="entity-id">${escaped}</span></div><p class="hint">Selected. Double-click the node to edit this scene.</p>`;
     }
 
+    function openSelectedSceneAfterRender(id){
+      if(!nativeShowModal)return;
+      defer(()=>{
+        if(sceneDialog.open)return;
+        const node=selectedNode(canvas);
+        if(!node?.classList?.contains("scene")||node.dataset?.id!==id)return;
+        nativeShowModal();
+      });
+    }
+
     if(nativeShowModal){
       sceneDialog.showModal=function(){
-        if(allowSceneOpen){allowSceneOpen=false;return nativeShowModal();}
         defer(syncSceneSelectionInspector);
       };
     }
@@ -107,10 +115,9 @@
       if(!node){tracker.reset();defer(emitSelection);return;}
       const id=node.dataset.id;
       if(ignoreNextClickId===id){ignoreNextClickId=null;tracker.reset();defer(emitSelection);return;}
-      if(node.classList.contains("scene")&&tracker.record(id,event.timeStamp)){
-        allowSceneOpen=true;
-        defer(()=>{allowSceneOpen=false;});
-      }else if(!node.classList.contains("scene"))tracker.reset();
+      if(node.classList.contains("scene")){
+        if(tracker.record(id,event.timeStamp))openSelectedSceneAfterRender(id);
+      }else tracker.reset();
       defer(()=>{syncSceneSelectionInspector();emitSelection();});
     }
 
