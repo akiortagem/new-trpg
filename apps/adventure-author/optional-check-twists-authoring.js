@@ -8,9 +8,11 @@
 
   const PLACEHOLDER_MARKER="__optionalTwistPlaceholder";
   const BACKUP_KEY="__optionalTwistBackup";
-  const clone=value=>JSON.parse(JSON.stringify(value));
   const object=value=>Boolean(value)&&typeof value==="object"&&!Array.isArray(value);
   const plainClone=value=>Array.isArray(value)?value.map(plainClone):object(value)?Object.fromEntries(Object.entries(value).filter(([key])=>key!=="toJSON").map(([key,item])=>[key,plainClone(item)])):value;
+  // Do not use JSON.parse here: the authoring extensions wrap it to capture
+  // loaded adventures, and validation can run from inside those wrappers.
+  const clone=value=>plainClone(value);
   const hasOwn=(value,key)=>Boolean(value)&&Object.prototype.hasOwnProperty.call(value,key);
   const twistPresence=choice=>({hasTwist:hasOwn(choice,"twist"),hasPreview:hasOwn(choice,"twistPreview")});
 
