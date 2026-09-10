@@ -26,6 +26,7 @@ test("choice editor exposes state path, comparison, and required value controls"
   assert.match(appSource,/data-cond-op/);
   assert.match(appSource,/data-cond-val/);
   assert.match(appSource,/function statePaths\(\)/);
+  assert.match(appSource,/<option value="\$\{op\}"/,"operator values remain stable when their labels are replaced");
 });
 
 test("authoring app loads shared condition validation and clear availability labels",()=>{

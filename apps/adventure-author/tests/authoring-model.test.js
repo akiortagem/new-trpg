@@ -95,8 +95,31 @@ test("state additions remain in the state inspector and blank outcome text is om
   const app=fs.readFileSync(require.resolve("../app.js"),"utf8");
   assert.match(app,/const mutateState=fn=>\{checkpoint\(\);fn\(\);renderState\(\);\}/);
   assert.match(app,/addFlag[^\n]*mutateState/);
+  assert.match(app,/data-remove-flag/);
+  assert.match(app,/Model\.removeStateDefinition\(adventure,"flag",id\)/);
   assert.match(app,/Outcome text \(optional\)/);
   assert.match(app,/else delete outcome\.text/);
+});
+
+test("deleting a flag also removes its choice-condition and effect references",()=>{
+  const value=Model.createAdventureDraft("state-delete","State Delete",1),choice=value.scenes.start.choices[0];
+  value.initialState.flags.open=false;
+  choice.when={all:[{path:"flags.open",equals:true},{path:"quest.elapsedDays",gte:1}]};
+  choice.outcome.effects=[{type:"set",path:"flags.open",value:true},{type:"add",path:"quest.elapsedDays",value:1}];
+  value.scenes.fight={type:"combat",interactions:[{id:"lever",effects:[{type:"set",path:"flags.open",value:true}]}]};
+  assert.equal(Model.stateReferenceCount(value,"flags.open"),3);
+  assert.deepEqual(Model.removeStateDefinition(value,"flag","open"),{ok:true,removedReferences:3});
+  assert.equal(value.initialState.flags.open,undefined);
+  assert.deepEqual(choice.when,{all:[{path:"quest.elapsedDays",gte:1}]});
+  assert.deepEqual(choice.outcome.effects,[{type:"add",path:"quest.elapsedDays",value:1}]);
+  assert.deepEqual(value.scenes.fight.interactions[0].effects,[]);
+});
+
+test("deleting the only condition removes the choice gate",()=>{
+  const value=Model.createAdventureDraft("state-delete","State Delete",1),choice=value.scenes.start.choices[0];
+  value.initialState.flags.open=false;choice.when={path:"flags.open",equals:true};
+  assert.equal(Model.removeStateDefinition(value,"flag","open").ok,true);
+  assert.equal(Object.prototype.hasOwnProperty.call(choice,"when"),false);
 });
 
 test("numeric editor parsers enforce effect bounds",()=>{

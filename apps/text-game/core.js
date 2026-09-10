@@ -68,7 +68,7 @@ function outcomeRefs(choice){
 }
 function validateOutcome(outcome,path,errors){
   if(!isObject(outcome)){errors.push(error(path,"must be an object"));return}
-  if(outcome.text!=null&&typeof outcome.text!=="string")errors.push(error(`${path}.text`,"must be a string when present"));
+  if(Object.prototype.hasOwnProperty.call(outcome,"text")&&typeof outcome.text!=="string")errors.push(error(`${path}.text`,"must be a string when present"));
   if(!outcome.next&&!outcome.end)errors.push(error(path,"must provide next or end"));
   if(outcome.end&&!['victory','defeat'].includes(outcome.end))errors.push(error(`${path}.end`,"must be victory or defeat"));
   if(outcome.effects&&!Array.isArray(outcome.effects))errors.push(error(`${path}.effects`,"must be an array"));

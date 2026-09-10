@@ -132,8 +132,10 @@ test("a textless direct ending remains textless while retaining an event-log mes
 });
 
 test("present choice outcome text must still be a string",()=>{
-  const value=adventure();value.scenes.test.choices[0].success.text=42;
-  assert.ok(Core.validateAdventure(value).some(error=>error.includes("success.text: must be a string when present")));
+  for(const invalid of [null,42,{}]){
+    const value=adventure();value.scenes.test.choices[0].success.text=invalid;
+    assert.ok(Core.validateAdventure(value).some(error=>error.includes("success.text: must be a string when present")));
+  }
 });
 
 test("returning from a dialogue branch does not replay the parent scene",()=>{
