@@ -113,6 +113,7 @@ Common:
 - description;
 - visibility condition builder;
 - outcomes and structured effects;
+- optional outcome text; a blank field is omitted and produces no outcome narration in play;
 - current destination display and disconnect action; new destinations are wired on the graph.
 
 Automatic choice:

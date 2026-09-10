@@ -48,6 +48,16 @@ test("main authoring canvas is pre-extended to three times its prior baseline",(
   assert.equal(edges.style.height,"3600px");
 });
 
+test("new nodes are centered in the currently visible canvas area",()=>{
+  const viewport={scrollLeft:1200,scrollTop:700,clientWidth:1000,clientHeight:600};
+  assert.deepEqual(Navigation.visibleCenterNodePosition(viewport),{x:1590,y:952});
+});
+
+test("new node positions are clamped to the canvas origin in a tiny viewport",()=>{
+  const viewport={scrollLeft:0,scrollTop:0,clientWidth:100,clientHeight:50};
+  assert.deepEqual(Navigation.visibleCenterNodePosition(viewport),{x:0,y:0});
+});
+
 test("middle mouse drag pans the authoring viewport",()=>{
   const viewport=new FakeTarget(),doc=new FakeTarget();
   viewport.scrollLeft=600;
