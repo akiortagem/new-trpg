@@ -68,7 +68,7 @@ function outcomeRefs(choice){
 }
 function validateOutcome(outcome,path,errors){
   if(!isObject(outcome)){errors.push(error(path,"must be an object"));return}
-  requireString(errors,outcome.text,`${path}.text`);
+  if(outcome.text!=null&&typeof outcome.text!=="string")errors.push(error(`${path}.text`,"must be a string when present"));
   if(!outcome.next&&!outcome.end)errors.push(error(path,"must provide next or end"));
   if(outcome.end&&!['victory','defeat'].includes(outcome.end))errors.push(error(`${path}.end`,"must be victory or defeat"));
   if(outcome.effects&&!Array.isArray(outcome.effects))errors.push(error(`${path}.effects`,"must be an array"));
@@ -258,9 +258,10 @@ function applyEffects(run,effects=[]){
   }
 }
 function applyOutcome(run,outcome,kind,random=Math.random){
-  log(run,`outcome.${kind}`,outcome.text,{effects:outcome.effects||[],next:outcome.next||null,end:outcome.end||null});
+  const outcomeText=typeof outcome.text==="string"&&outcome.text.trim()?outcome.text:null;
+  if(outcomeText)log(run,`outcome.${kind}`,outcomeText,{effects:outcome.effects||[],next:outcome.next||null,end:outcome.end||null});
   applyEffects(run,outcome.effects||[]);
-  if(outcome.end){run.status=outcome.end;run.ending={title:outcome.title||"Adventure End",text:outcome.text,outcome:outcome.end};log(run,"run.ended",outcome.text,{outcome:outcome.end});return}
+  if(outcome.end){run.status=outcome.end;run.ending={title:outcome.title||"Adventure End",text:outcomeText||"",outcome:outcome.end};log(run,"run.ended",outcomeText||`Adventure ended in ${outcome.end}.`,{outcome:outcome.end});return}
   run.sceneId=outcome.next;enterCurrentScene(run,random);
 }
 function resolveChoice(run,choiceId,actorId=null,random=Math.random){

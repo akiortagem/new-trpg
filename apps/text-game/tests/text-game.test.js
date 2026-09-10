@@ -109,6 +109,33 @@ test("same-scene dialogue outcomes return to choices without replaying the scene
   assert.equal(run.sceneId,"test");assert.equal(run.log.filter(x=>x.type==="scene.entered").length,enteredBefore);assert.equal(run.log.filter(x=>x.type.startsWith("story.")).length,passagesBefore);assert.deepEqual(Core.visibleChoices(run).map(x=>x.id),["leave"]);assert.ok(run.log.some(x=>x.type==="outcome.automatic"&&x.message==="The scout answers the question."));
 });
 
+test("choice outcomes may omit text without adding a visual-novel outcome entry",()=>{
+  const value=adventure();
+  value.scenes.test.choices=[{id:"silent",label:"Continue",resolution:"automatic",reason:"Transition",outcome:{next:"fight"}}];
+  const errors=Core.validateAdventure(value);
+  assert.deepEqual(errors,[]);
+  const run=Core.createRun(character(),value,()=>0.5);
+  Core.resolveChoice(run,"silent",null,()=>0.5);
+  assert.equal(run.sceneId,"fight");
+  assert.equal(run.log.some(entry=>entry.type==="outcome.automatic"),false);
+});
+
+test("a textless direct ending remains textless while retaining an event-log message",()=>{
+  const value=adventure();
+  value.scenes.test.choices=[{id:"finish",label:"Finish",resolution:"automatic",reason:"Transition",outcome:{end:"victory"}}];
+  const run=Core.createRun(character(),value,()=>0.5);
+  Core.resolveChoice(run,"finish",null,()=>0.5);
+  assert.equal(run.status,"victory");
+  assert.equal(run.ending.text,"");
+  assert.equal(run.log.some(entry=>entry.type==="outcome.automatic"),false);
+  assert.ok(run.log.some(entry=>entry.type==="run.ended"&&entry.message==="Adventure ended in victory."));
+});
+
+test("present choice outcome text must still be a string",()=>{
+  const value=adventure();value.scenes.test.choices[0].success.text=42;
+  assert.ok(Core.validateAdventure(value).some(error=>error.includes("success.text: must be a string when present")));
+});
+
 test("returning from a dialogue branch does not replay the parent scene",()=>{
   const value=adventure();value.initialState.flags.asked=false;value.scenes.test.choices=[
     {id:"ask",label:"Ask about the ruins",resolution:"automatic",reason:"Conversation",when:{path:"flags.asked",equals:false},outcome:{text:"The scout considers the question.",next:"ruins-answer",effects:[{type:"set",path:"flags.asked",value:true}]}},

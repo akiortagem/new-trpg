@@ -7,6 +7,8 @@
 
   const MAIN_CANVAS_WIDTH=5400;
   const MAIN_CANVAS_HEIGHT=3600;
+  const MAIN_NODE_WIDTH=220;
+  const MAIN_NODE_HEIGHT=96;
   const MIDDLE_MOUSE_BUTTON=1;
   const MIDDLE_MOUSE_BUTTON_MASK=4;
 
@@ -16,6 +18,14 @@
     canvas.style.minHeight=`${MAIN_CANVAS_HEIGHT}px`;
     edges.style.width=`${MAIN_CANVAS_WIDTH}px`;
     edges.style.height=`${MAIN_CANVAS_HEIGHT}px`;
+  }
+
+  function visibleCenterNodePosition(viewport,nodeWidth=MAIN_NODE_WIDTH,nodeHeight=MAIN_NODE_HEIGHT){
+    if(!viewport)return{x:0,y:0};
+    return {
+      x:Math.max(0,viewport.scrollLeft+(viewport.clientWidth-nodeWidth)/2),
+      y:Math.max(0,viewport.scrollTop+(viewport.clientHeight-nodeHeight)/2)
+    };
   }
 
   function bindMiddleMousePan(viewport,doc){
@@ -76,7 +86,7 @@
     bindMiddleMousePan(viewport,doc);
   }
 
-  return {MAIN_CANVAS_WIDTH,MAIN_CANVAS_HEIGHT,MIDDLE_MOUSE_BUTTON,MIDDLE_MOUSE_BUTTON_MASK,extendMainCanvas,bindMiddleMousePan,initialize};
+  return {MAIN_CANVAS_WIDTH,MAIN_CANVAS_HEIGHT,MAIN_NODE_WIDTH,MAIN_NODE_HEIGHT,MIDDLE_MOUSE_BUTTON,MIDDLE_MOUSE_BUTTON_MASK,extendMainCanvas,visibleCenterNodePosition,bindMiddleMousePan,initialize};
 });
 
 if(typeof document!=="undefined")AdventureCanvasNavigation.initialize(document);

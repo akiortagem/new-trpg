@@ -29,7 +29,7 @@
       label:"Continue",
       resolution:"automatic",
       reason:"The scene is ready to continue.",
-      outcome:{text:"Continue the adventure.",next:""}
+      outcome:{next:""}
     };
   }
 

@@ -190,6 +190,8 @@ Use `resolution: "automatic"` when the action requires no roll. This covers ordi
 
 The app does not infer automatic success from an ability name. The author decides that the defined effect resolves the task and marks the choice accordingly.
 
+`text` is optional on every choice outcome. Omit it when the choice should apply its effects and continue directly to the next scene without presenting a separate outcome narration. If present, it must be a string.
+
 An ordinary scene's title and opening passages are presented only on its first visit. When several choices belong to the same conversation or investigation, outcomes may lead to subscenes and then set `next` back to the original scene. Returning to any previously visited ordinary scene goes directly to its currently available choices without repeating its opening. Use conditions and effects to hide questions that have already been asked or reveal new choices. If prose must play again later, place that prose in a new scene with a distinct id. Combat scenes are not subject to this rule and may start again when an outcome points back to them.
 
 ## Checks and actors

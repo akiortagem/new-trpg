@@ -48,10 +48,10 @@ test("wizard draft validation only requires author-facing fields",()=>{
 
 test("new scene defaults provide an auto-id continue choice",()=>{
   const first=Model.createContinueChoice(),second=Model.createContinueChoice();
-  assert.deepEqual(first,{id:"continue",label:"Continue",resolution:"automatic",reason:"The scene is ready to continue.",outcome:{text:"Continue the adventure.",next:""}});
+  assert.deepEqual(first,{id:"continue",label:"Continue",resolution:"automatic",reason:"The scene is ready to continue.",outcome:{next:""}});
   assert.notEqual(first,second);
   first.outcome.text="Changed";
-  assert.equal(second.outcome.text,"Continue the adventure.");
+  assert.equal(second.outcome.text,undefined);
 });
 
 test("structured authoring uses a scene modal and exposes no editable entity ids",()=>{
@@ -89,6 +89,14 @@ test("passage edits do not consume add clicks or reset the passage list",()=>{
   assert.match(app,/fields\[fields\.length-1\]\.focus\(\)/);
   assert.match(app,/addNarration[^\n]*appendPassage\("New narration\."\)/);
   assert.match(app,/addDialogue[^\n]*appendPassage\(\{speaker:"Speaker",text:"New dialogue\."\}\)/);
+});
+
+test("state additions remain in the state inspector and blank outcome text is omitted",()=>{
+  const app=fs.readFileSync(require.resolve("../app.js"),"utf8");
+  assert.match(app,/const mutateState=fn=>\{checkpoint\(\);fn\(\);renderState\(\);\}/);
+  assert.match(app,/addFlag[^\n]*mutateState/);
+  assert.match(app,/Outcome text \(optional\)/);
+  assert.match(app,/else delete outcome\.text/);
 });
 
 test("numeric editor parsers enforce effect bounds",()=>{
