@@ -334,6 +334,8 @@ When supported by the browser, **Open** uses the File System Access API and reta
 
 For browsers without direct file handles, the app may fall back to downloading the current JSON. The UI must make the fallback explicit because it cannot truly overwrite the original file.
 
+Successful File System Access writes show a nonblocking “Adventure successfully saved.” toast after the writable stream closes. The toast dismisses after five seconds and is announced as a status message. Cancelled or failed saves never show success. Save is disabled while a write is pending. Browsers without file-picker support show a download-started toast, since the app cannot confirm download completion.
+
 Autosave is not required.
 
 ## Undo and redo
@@ -374,3 +376,4 @@ The text-game validator must allow multiple combat scenes. The one-combat design
 - Unsupported schema is rejected before editing.
 - Undo/redo works for document edits.
 - `SPEC.md` remains in the app directory as the implementation contract.
+
