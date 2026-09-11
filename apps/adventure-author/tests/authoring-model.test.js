@@ -93,7 +93,7 @@ test("passage edits do not consume add clicks or reset the passage list",()=>{
 
 test("state additions remain in the state inspector and blank outcome text is omitted",()=>{
   const app=fs.readFileSync(require.resolve("../app.js"),"utf8");
-  assert.match(app,/const mutateState=fn=>\{checkpoint\(\);fn\(\);renderState\(\);\}/);
+  assert.match(app,/const mutateState=fn=>\{checkpoint\(\);fn\(\);renderState\(\);updateSaveStatus\(\);\}/);
   assert.match(app,/addFlag[^\n]*mutateState/);
   assert.match(app,/data-remove-flag/);
   assert.match(app,/Model\.removeStateDefinition\(adventure,"flag",id\)/);
@@ -319,3 +319,4 @@ test("graph connections reject a missing destination without mutation",()=>{
   assert.equal(Model.connectOutcome(outcome,"  ").ok,false);
   assert.deepEqual(outcome,{text:"Continue",next:"existing"});
 });
+

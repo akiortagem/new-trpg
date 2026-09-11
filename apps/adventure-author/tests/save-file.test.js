@@ -19,8 +19,8 @@ function fileHandle(id,closing=Promise.resolve()){
 }
 function setup(){
   const nodes=new Map(),timers=new Map(),alerts=[];
-  const $=id=>{if(!nodes.has(id))nodes.set(id,{hidden:true,textContent:"",listeners:{},addEventListener(type,fn){this.listeners[type]=fn;}});return nodes.get(id);};
-  const context={Core,Model,$,window:{},fileLabel:$("#fileLabel"),alert:message=>alerts.push(message),
+  const $=id=>{if(!nodes.has(id))nodes.set(id,{hidden:true,textContent:"",classList:{toggle(){}},listeners:{},addEventListener(type,fn){this.listeners[type]=fn;}});return nodes.get(id);};
+  const context={Core,Model,$,document:{addEventListener(){},activeElement:{blur(){}}},window:{},fileLabel:$("#fileLabel"),alert:message=>alerts.push(message),
     render(){context.fileLabel.textContent=context.api.adventure.title;},
     renderBattlefield(){},renderEnemyCatalog(){},
     setTimeout(fn){const id=timers.size+1;timers.set(id,fn);return id;},clearTimeout(id){timers.delete(id);}};
@@ -87,3 +87,4 @@ test("undo and redo during a first save preserve the document's new file associa
   assert.equal(t.$("#saveToast").textContent,"Adventure successfully saved.");
   assert.equal(t.$("#saveBtn").disabled,false);
 });
+

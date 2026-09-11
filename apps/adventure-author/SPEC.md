@@ -336,6 +336,8 @@ For browsers without direct file handles, the app may fall back to downloading t
 
 Successful File System Access writes show a nonblocking “Adventure successfully saved.” toast after the writable stream closes. The toast dismisses after five seconds and is announced as a status message. Cancelled or failed saves never show success. Save is disabled while a write is pending. New/Open assigns a new document session; a save completing for an older session cannot replace the current file handle, label, or success toast. Undo/redo and raw JSON edits retain the current document session. Browsers without file-picker support show a download-started toast, since the app cannot confirm download completion.
 
+The header continuously shows whether there are unsaved changes and the last successful save time in the browser’s local date/time format. New adventures show “Never saved”. Opening a file uses its modification time and establishes a clean baseline after migration/layout normalization. Edits, including inline fields, states, battlefield changes, node movement, raw JSON application, and undo/redo, are compared with the saved document snapshot. Pending text input is shown as unsaved before blur. A successful write records the snapshot captured when Save started, so edits made during the write remain unsaved. Cancelled/failed saves and saves for an older document session do not update the baseline or timestamp. Download fallback records a separate unconfirmed download time and keeps unsaved changes visible. This status is session-only UI metadata and is not added to adventure JSON.
+
 Autosave is not required.
 
 ## Undo and redo
@@ -376,4 +378,5 @@ The text-game validator must allow multiple combat scenes. The one-combat design
 - Unsupported schema is rejected before editing.
 - Undo/redo works for document edits.
 - `SPEC.md` remains in the app directory as the implementation contract.
+
 
