@@ -24,3 +24,4 @@ label.inline>[data-show-title]:focus-visible{outline:0;box-shadow:0 0 0 3px #82b
 
 
 .save-toast{position:fixed;right:24px;bottom:24px;z-index:1000;max-width:min(440px,calc(100vw - 32px));padding:14px 18px;border:1px solid #54866b;border-radius:9px;background:#203b2c;color:#eef8f1;box-shadow:0 8px 24px #0006;pointer-events:none}
+.state-dialog{width:min(900px,94vw);max-height:90vh;display:flex;flex-direction:column}.state-dialog .dialog-title-row{flex-shrink:0;padding-bottom:14px}.state-dialog h2{margin:0}.state-editor{min-height:0;overflow:auto}.state-editor .row{margin-bottom:8px}.state-editor .row.three{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto}.state-editor .card+.card{margin-top:8px}

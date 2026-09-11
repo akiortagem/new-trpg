@@ -368,7 +368,7 @@ The text-game validator must allow multiple combat scenes. The one-combat design
 - Choice destinations can be wired through structured destination controls and visibly render as edges.
 - Scene passages and automatic/check choices can be authored without raw JSON.
 - A check can remove Success with a Twist; the Twist editor/output disappear and saved JSON omits both twist fields while success and failure remain intact.
-- State declarations, conditions, effects and clocks have structured controls.
+- State declarations, conditions, effects and clocks have structured controls. State & Clocks opens a scrollable modal with a Close button and Escape dismissal; additions, edits, and undo/redo keep that modal current.
 - Combat battlefield zones/links, PC starts, enemies, agnostic ability presets and interactions can be authored.
 - Multiple combats save successfully but produce a warning.
 - Save overwrites the opened file when the browser grants a writable file handle.
