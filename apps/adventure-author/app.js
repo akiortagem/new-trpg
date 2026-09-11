@@ -26,6 +26,32 @@
   let adventure = null, selected = null, selectedChoice = null, selectedEnemy = null, fileHandle = null;
   // Changes only when New/Open installs a different document, not for undo/redo.
   let documentSession = 0;
+  let savedSnapshot = null, lastSavedAt = null, lastDownloadAt = null;
+  const pendingInputs = new Map();
+  function resetSaveStatus(file=null){
+    savedSnapshot=file?JSON.stringify(adventure):null;
+    lastSavedAt=file?.lastModified?new Date(file.lastModified):null;
+    lastDownloadAt=null;pendingInputs.clear();updateSaveStatus();
+  }
+  function updateSaveStatus(){
+    const status=$("#saveStatus");
+    if(!status)return;
+    status.hidden=!adventure;
+    if(!adventure)return;
+    const dirty=pendingInputs.size>0||JSON.stringify(adventure)!==savedSnapshot;
+    const saved=lastSavedAt?`Last saved: ${lastSavedAt.toLocaleString()}`:"Never saved";
+    status.textContent=`${dirty?"Unsaved changes":"All changes saved"} · ${saved}${lastDownloadAt?` · Download started: ${lastDownloadAt.toLocaleString()} (save unconfirmed)`:""}`;
+    status.classList.toggle("unsaved",dirty);
+  }
+  // Most structured fields commit on change; show pending typing immediately.
+  document.addEventListener("input",event=>{
+    const input=event.target;
+    if(!input.matches("input,textarea")||input.closest("#wizardDialog,#jsonDialog")||input.type==="file")return;
+    if(!pendingInputs.has(input))pendingInputs.set(input,input.defaultValue);
+    if(input.value===pendingInputs.get(input))pendingInputs.delete(input);
+    updateSaveStatus();
+  });
+  document.addEventListener("change",event=>{pendingInputs.delete(event.target);updateSaveStatus();});
   let history = [], future = [], dragging = null, suppressNodeOpen = null, connectionDragging = null, battleSceneId = null, battleSelectedZone = null, battleSubEditor = null;
 
   const clone = v => JSON.parse(JSON.stringify(v));
@@ -37,7 +63,7 @@
   function ensureEditor(){ adventure.editor ||= {}; adventure.editor.nodes ||= {}; }
   function checkpoint(){ if(!adventure)return; history.push(JSON.stringify(adventure)); if(history.length>100)history.shift(); future=[]; updateUndo(); }
   function mutate(fn){ if(!adventure)return; checkpoint(); fn(); render(); }
-  function mutateInline(fn,refreshGraph=false){if(!adventure)return;checkpoint();fn();if(refreshGraph)renderGraph();}
+  function mutateInline(fn,refreshGraph=false){if(!adventure)return;checkpoint();fn();if(refreshGraph)renderGraph();updateSaveStatus();}
   function updateUndo(){ $("#undoBtn").disabled=!history.length; $("#redoBtn").disabled=!future.length; }
   function resetHistory(){ history=[]; future=[]; updateUndo(); }
   function syncBattlefieldAfterHistory(){
@@ -53,7 +79,7 @@
   function newAdventure(title,days){
     adventure=Model.createAdventureDraft(title,title,days);
     documentSession++;
-    fileHandle=null; selected="start"; selectedChoice=null; battleSubEditor=null; resetHistory(); render();
+    resetSaveStatus();fileHandle=null; selected="start"; selectedChoice=null; battleSubEditor=null; resetHistory(); render();
   }
 
   function knownTopFields(obj){ return Object.keys(obj).every(k=>["schemaVersion","kind","id","title","startScene","questDays","initialState","clocks","party","enemies","scenes","editor"].includes(k)); }
@@ -69,12 +95,12 @@
     try{
       if(window.showOpenFilePicker){
         const [h]=await window.showOpenFilePicker({types:[{description:"Adventure JSON",accept:{"application/json":[".json"]}}],multiple:false});
-        const f=await h.getFile(), obj=JSON.parse(await f.text()); assertOpenable(obj); adventure=Model.migrateEnemyCatalog(obj); documentSession++; fileHandle=h; normalizeLayout(); selected=null; selectedChoice=null; battleSubEditor=null; resetHistory(); render(); return;
+        const f=await h.getFile(), obj=JSON.parse(await f.text()); assertOpenable(obj); adventure=Model.migrateEnemyCatalog(obj); documentSession++; fileHandle=h; normalizeLayout(); selected=null; selectedChoice=null; battleSubEditor=null; resetHistory(); render(); resetSaveStatus(f); return;
       }
     }catch(e){ if(e.name==="AbortError")return; alert(e.message); return; }
     $("#fallbackOpen").click();
   }
-  $("#fallbackOpen").addEventListener("change",async e=>{ const f=e.target.files[0]; if(!f)return; try{const obj=JSON.parse(await f.text());assertOpenable(obj);adventure=Model.migrateEnemyCatalog(obj);documentSession++;fileHandle=null;normalizeLayout();selected=null;selectedChoice=null;battleSubEditor=null;resetHistory();render();}catch(err){alert(err.message)} e.target.value=""; });
+  $("#fallbackOpen").addEventListener("change",async e=>{ const f=e.target.files[0]; if(!f)return; try{const obj=JSON.parse(await f.text());assertOpenable(obj);adventure=Model.migrateEnemyCatalog(obj);documentSession++;fileHandle=null;normalizeLayout();selected=null;selectedChoice=null;battleSubEditor=null;resetHistory();render();resetSaveStatus(f);}catch(err){alert(err.message)} e.target.value=""; });
   let saveToastTimer = null;
   function showSaveToast(message){
     const toast=$("#saveToast");
@@ -84,8 +110,10 @@
     saveToastTimer=setTimeout(()=>{toast.hidden=true;toast.textContent="";},5000);
   }
   async function saveFile(){
-    if(!adventure)return;
+    if(!adventure||$("#saveBtn").disabled)return;
+    document.activeElement?.blur();
     const savingSession=documentSession;
+    const savingSnapshot=JSON.stringify(adventure);
     const text=JSON.stringify(adventure,null,2)+"\n",filename=`${adventure.id}.json`;
     const toast=$("#saveToast");clearTimeout(saveToastTimer);toast.hidden=true;toast.textContent="";
     $("#saveBtn").disabled=true;
@@ -97,6 +125,7 @@
         await writable.close();
         // A completed write belongs to the document that started it.
         if(documentSession!==savingSession)return;
+        savedSnapshot=savingSnapshot;lastSavedAt=new Date();lastDownloadAt=null;updateSaveStatus();
         fileHandle=handle;
         fileLabel.textContent=filename;
         showSaveToast("Adventure successfully saved.");
@@ -105,6 +134,7 @@
       const blob=new Blob([text],{type:"application/json"}),link=document.createElement("a"),url=URL.createObjectURL(blob);
       try{
         link.href=url;link.download=filename;document.body.appendChild(link);link.click();
+        lastDownloadAt=new Date();updateSaveStatus();
         showSaveToast("Adventure download started. Check your browser downloads for the saved JSON file.");
       }finally{link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
     }catch(error){
@@ -152,7 +182,7 @@
   }
   function startDrag(e){ if(e.button!==0)return; const id=e.currentTarget.dataset.id,p=nodePos(id),sx=e.clientX,sy=e.clientY;dragging={id,sx,sy,x:p.x,y:p.y,moved:false};document.addEventListener("mousemove",dragMove);document.addEventListener("mouseup",dragEnd,{once:true}); }
   function dragMove(e){if(!dragging)return;const dx=e.clientX-dragging.sx,dy=e.clientY-dragging.sy;if(Math.abs(dx)+Math.abs(dy)>3)dragging.moved=true;ensureEditor();adventure.editor.nodes[dragging.id]={x:Math.max(0,dragging.x+dx),y:Math.max(0,dragging.y+dy)};const el=document.querySelector(`.node[data-id="${CSS.escape(dragging.id)}"]`);if(el){el.style.left=`${adventure.editor.nodes[dragging.id].x}px`;el.style.top=`${adventure.editor.nodes[dragging.id].y}px`;renderEdges();}}
-  function dragEnd(){document.removeEventListener("mousemove",dragMove);if(dragging?.moved){const id=dragging.id;history.push(JSON.stringify({...adventure,editor:{...adventure.editor,nodes:{...adventure.editor.nodes,[id]:{x:dragging.x,y:dragging.y}}}}));future=[];updateUndo();suppressNodeOpen=id;setTimeout(()=>{if(suppressNodeOpen===id)suppressNodeOpen=null;},0);}dragging=null;}
+  function dragEnd(){document.removeEventListener("mousemove",dragMove);if(dragging?.moved){const id=dragging.id;history.push(JSON.stringify({...adventure,editor:{...adventure.editor,nodes:{...adventure.editor.nodes,[id]:{x:dragging.x,y:dragging.y}}}}));future=[];updateUndo();suppressNodeOpen=id;setTimeout(()=>{if(suppressNodeOpen===id)suppressNodeOpen=null;},0);}dragging=null;updateSaveStatus();}
 
   function field(label,value,key,type="text"){return `<label class="field"><span>${esc(label)}</span><input data-field="${esc(key)}" type="${type}" value="${esc(value)}"></label>`;}
   function titleVisibilityControl(s){return `<label class="inline"><input data-show-title type="checkbox" ${s.showTitle!==false?"checked":""}> Show title in game</label>`;}
@@ -299,7 +329,7 @@
     adventure.initialState ||= {flags:{},counters:{}};adventure.initialState.flags ||= {};adventure.initialState.counters ||= {};adventure.clocks ||= {};
     const entries=(obj,type)=>Object.entries(obj).map(([k,v])=>`<div class="row ${type==="flag"?"three":""}"><input data-state-key="${type}:${esc(k)}" value="${esc(k)}"><input data-state-val="${type}:${esc(k)}" value="${esc(v)}">${type==="flag"?`<button class="mini-btn danger" data-remove-flag="${esc(k)}">Remove</button>`:""}</div>`).join("");
     stateEditor.innerHTML=`<div class="section"><div class="section-title"><h3>Flags</h3><button class="mini-btn" id="addFlag">+ Flag</button></div>${entries(adventure.initialState.flags,"flag")}</div><div class="section"><div class="section-title"><h3>Counters</h3><button class="mini-btn" id="addCounter">+ Counter</button></div>${entries(adventure.initialState.counters,"counter")}</div><div class="section"><div class="section-title"><h3>Clocks</h3><button class="mini-btn" id="addClock">+ Clock</button></div>${Object.entries(adventure.clocks).map(([id,c])=>`<div class="card"><div class="card-title">${entityMeta(id)}</div><input data-clock-label="${esc(id)}" value="${esc(c.label)}"><select data-clock-size="${esc(id)}">${[2,4,6].map(n=>`<option ${c.size===n?"selected":""}>${n}</option>`)}</select></div>`).join("")}</div><p class="hint">quest.elapsedDays and clock progress are available to visibility conditions.</p>`;
-    const mutateState=fn=>{checkpoint();fn();renderState();};
+    const mutateState=fn=>{checkpoint();fn();renderState();updateSaveStatus();};
     $("#addFlag").onclick=()=>mutateState(()=>adventure.initialState.flags[unique("flag",new Set(Object.keys(adventure.initialState.flags)))]=false);$("#addCounter").onclick=()=>mutateState(()=>adventure.initialState.counters[unique("counter",new Set(Object.keys(adventure.initialState.counters)))]=0);$("#addClock").onclick=()=>mutateState(()=>adventure.clocks[unique("clock",new Set(Object.keys(adventure.clocks))) ]={label:"Progress",size:4});
     stateEditor.querySelectorAll("[data-remove-flag]").forEach(button=>button.onclick=()=>{const id=button.dataset.removeFlag,path=`flags.${id}`,references=Model.stateReferenceCount(adventure,path);if(references&&!confirm(`Delete ${id} and remove ${references} condition or effect reference${references===1?"":"s"}?`))return;mutateState(()=>Model.removeStateDefinition(adventure,"flag",id));});
     stateEditor.querySelectorAll("[data-state-val]").forEach(el=>el.onchange=()=>mutateState(()=>{const [t,k]=el.dataset.stateVal.split(":"),raw=el.value,v=raw==="true"?true:raw==="false"?false:(!Number.isNaN(Number(raw))?Number(raw):raw);(t==="flag"?adventure.initialState.flags:adventure.initialState.counters)[k]=v;}));
@@ -405,10 +435,11 @@
     $("#deleteInteraction").onclick=()=>{battleSubEditor=null;mutateBattle(()=>s.interactions.splice(s.interactions.indexOf(interaction),1));};
   }
 
-  function render(){fileLabel.textContent=adventure?(fileHandle?`${adventure.id}.json`:adventure.title):"Untitled";renderGraph();renderInspector();if($("#stateDialog").open)renderState();}
+  function render(){fileLabel.textContent=adventure?(fileHandle?`${adventure.id}.json`:adventure.title):"Untitled";renderGraph();renderInspector();if($("#stateDialog").open)renderState();updateSaveStatus();}
 
   $("#newBtn").onclick=()=>$("#wizardDialog").showModal();$("#createAdventureBtn").onclick=e=>{e.preventDefault();const form=$("#wizardForm");if(!form.reportValidity())return;const title=$("#wizTitle").value,days=$("#wizDays").value,errors=Model.validateWizardDraftInput(title,days);if(errors.length){alert(errors.join("\n"));return;}newAdventure(title,days);$("#wizardDialog").close();};$("#openBtn").onclick=openFile;$("#saveBtn").onclick=saveFile;$("#undoBtn").onclick=undo;$("#redoBtn").onclick=redo;$("#metaBtn").onclick=()=>{selected=null;selectedChoice=null;renderMeta()};$("#enemiesBtn").onclick=()=>openEnemyCatalog();$("#addEnemyDefinition").onclick=()=>{if(!adventure)return;adventure.enemies ||= [];const id=unique("enemy",new Set(adventure.enemies.map(enemy=>enemy.id)));selectedEnemy=id;mutateEnemyCatalog(()=>adventure.enemies.push(newEnemyDefinition(id)));};$("#stateBtn").onclick=openStateEditor;$("#closeStateBtn").onclick=()=>$("#stateDialog").close();$("#validateBtn").onclick=()=>{selected=null;selectedChoice=null;renderValidation()};document.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>addNode(b.dataset.add));canvas.onclick=()=>{selected=null;selectedChoice=null;render()};$("#jsonBtn").onclick=()=>{if(!adventure)return;$("#jsonText").value=JSON.stringify(adventure,null,2);$("#jsonError").textContent="";$("#jsonDialog").showModal();};$("#applyJsonBtn").onclick=e=>{e.preventDefault();try{const obj=JSON.parse($("#jsonText").value);assertOpenable(obj);checkpoint();adventure=Model.migrateEnemyCatalog(obj);normalizeLayout();selected=null;selectedChoice=null;battleSubEditor=null;$("#jsonDialog").close();render();}catch(err){$("#jsonError").textContent=err.message;}};$("#closeSceneBtn").onclick=()=>$("#sceneDialog").close();$("#sceneDialog").addEventListener("close",()=>{if(selected&&scenes()[selected]?.type==="scene"){selected=null;selectedChoice=null;renderGraph();renderMeta();}});$("#closeBattlefieldBtn").onclick=()=>{battleSubEditor=null;$("#battlefieldDialog").close();};$("#closeEnemiesBtn").onclick=()=>$("#enemiesDialog").close();document.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){e.preventDefault();e.shiftKey?redo():undo()}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="y"){e.preventDefault();redo()}});
 
   resetHistory(); render();
 })();
+
 
