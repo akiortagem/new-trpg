@@ -334,7 +334,7 @@ When supported by the browser, **Open** uses the File System Access API and reta
 
 For browsers without direct file handles, the app may fall back to downloading the current JSON. The UI must make the fallback explicit because it cannot truly overwrite the original file.
 
-Successful File System Access writes show a nonblocking “Adventure successfully saved.” toast after the writable stream closes. The toast dismisses after five seconds and is announced as a status message. Cancelled or failed saves never show success. Save is disabled while a write is pending. Browsers without file-picker support show a download-started toast, since the app cannot confirm download completion.
+Successful File System Access writes show a nonblocking “Adventure successfully saved.” toast after the writable stream closes. The toast dismisses after five seconds and is announced as a status message. Cancelled or failed saves never show success. Save is disabled while a write is pending. New/Open assigns a new document session; a save completing for an older session cannot replace the current file handle, label, or success toast. Undo/redo and raw JSON edits retain the current document session. Browsers without file-picker support show a download-started toast, since the app cannot confirm download completion.
 
 Autosave is not required.
 

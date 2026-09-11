@@ -24,6 +24,8 @@
   const canvas = $("#canvas"), canvasViewport = $(".canvas-wrap"), edgesSvg = $("#edges"), inspector = $("#inspector"), sceneEditor = $("#sceneEditor");
   const fileLabel = $("#fileLabel");
   let adventure = null, selected = null, selectedChoice = null, selectedEnemy = null, fileHandle = null;
+  // Changes only when New/Open installs a different document, not for undo/redo.
+  let documentSession = 0;
   let history = [], future = [], dragging = null, suppressNodeOpen = null, connectionDragging = null, battleSceneId = null, battleSelectedZone = null, battleSubEditor = null;
 
   const clone = v => JSON.parse(JSON.stringify(v));
@@ -50,6 +52,7 @@
 
   function newAdventure(title,days){
     adventure=Model.createAdventureDraft(title,title,days);
+    documentSession++;
     fileHandle=null; selected="start"; selectedChoice=null; battleSubEditor=null; resetHistory(); render();
   }
 
@@ -66,12 +69,12 @@
     try{
       if(window.showOpenFilePicker){
         const [h]=await window.showOpenFilePicker({types:[{description:"Adventure JSON",accept:{"application/json":[".json"]}}],multiple:false});
-        const f=await h.getFile(), obj=JSON.parse(await f.text()); assertOpenable(obj); adventure=Model.migrateEnemyCatalog(obj); fileHandle=h; normalizeLayout(); selected=null; selectedChoice=null; battleSubEditor=null; resetHistory(); render(); return;
+        const f=await h.getFile(), obj=JSON.parse(await f.text()); assertOpenable(obj); adventure=Model.migrateEnemyCatalog(obj); documentSession++; fileHandle=h; normalizeLayout(); selected=null; selectedChoice=null; battleSubEditor=null; resetHistory(); render(); return;
       }
     }catch(e){ if(e.name==="AbortError")return; alert(e.message); return; }
     $("#fallbackOpen").click();
   }
-  $("#fallbackOpen").addEventListener("change",async e=>{ const f=e.target.files[0]; if(!f)return; try{const obj=JSON.parse(await f.text());assertOpenable(obj);adventure=Model.migrateEnemyCatalog(obj);fileHandle=null;normalizeLayout();selected=null;selectedChoice=null;battleSubEditor=null;resetHistory();render();}catch(err){alert(err.message)} e.target.value=""; });
+  $("#fallbackOpen").addEventListener("change",async e=>{ const f=e.target.files[0]; if(!f)return; try{const obj=JSON.parse(await f.text());assertOpenable(obj);adventure=Model.migrateEnemyCatalog(obj);documentSession++;fileHandle=null;normalizeLayout();selected=null;selectedChoice=null;battleSubEditor=null;resetHistory();render();}catch(err){alert(err.message)} e.target.value=""; });
   let saveToastTimer = null;
   function showSaveToast(message){
     const toast=$("#saveToast");
@@ -82,6 +85,7 @@
   }
   async function saveFile(){
     if(!adventure)return;
+    const savingSession=documentSession;
     const text=JSON.stringify(adventure,null,2)+"\n",filename=`${adventure.id}.json`;
     const toast=$("#saveToast");clearTimeout(saveToastTimer);toast.hidden=true;toast.textContent="";
     $("#saveBtn").disabled=true;
@@ -91,6 +95,8 @@
         const writable=await handle.createWritable();
         await writable.write(text);
         await writable.close();
+        // A completed write belongs to the document that started it.
+        if(documentSession!==savingSession)return;
         fileHandle=handle;
         fileLabel.textContent=filename;
         showSaveToast("Adventure successfully saved.");
