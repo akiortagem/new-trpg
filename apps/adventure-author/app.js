@@ -73,8 +73,8 @@
     else{battleSceneId=null;battleSelectedZone=null;battleSubEditor=null;dialog.close();}
   }
   function syncEnemyCatalogAfterHistory(){if($("#enemiesDialog")?.open){if(!adventure.enemies?.some(enemy=>enemy.id===selectedEnemy))selectedEnemy=adventure.enemies?.[0]?.id||null;renderEnemyCatalog();}}
-  function undo(){ if(!history.length||!adventure)return; future.push(JSON.stringify(adventure)); adventure=JSON.parse(history.pop()); selected=null; selectedChoice=null; battleSubEditor=null; render(); syncBattlefieldAfterHistory();syncEnemyCatalogAfterHistory(); updateUndo(); }
-  function redo(){ if(!future.length||!adventure)return; history.push(JSON.stringify(adventure)); adventure=JSON.parse(future.pop()); selected=null; selectedChoice=null; battleSubEditor=null; render(); syncBattlefieldAfterHistory();syncEnemyCatalogAfterHistory(); updateUndo(); }
+  function undo(){ if(!history.length||!adventure)return; pendingInputs.clear(); future.push(JSON.stringify(adventure)); adventure=JSON.parse(history.pop()); selected=null; selectedChoice=null; battleSubEditor=null; render(); syncBattlefieldAfterHistory();syncEnemyCatalogAfterHistory(); updateUndo(); }
+  function redo(){ if(!future.length||!adventure)return; pendingInputs.clear(); history.push(JSON.stringify(adventure)); adventure=JSON.parse(future.pop()); selected=null; selectedChoice=null; battleSubEditor=null; render(); syncBattlefieldAfterHistory();syncEnemyCatalogAfterHistory(); updateUndo(); }
 
   function newAdventure(title,days){
     adventure=Model.createAdventureDraft(title,title,days);
