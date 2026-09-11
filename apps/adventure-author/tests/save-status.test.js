@@ -23,6 +23,14 @@ function setup(){
   const input={value:'Typing',defaultValue:'Edited',type:'text',matches:()=>true,closest:()=>null};
   api.resetSaveStatus({lastModified:1700000000000});events.input({target:input});assert.match(status.textContent,/Unsaved changes/);
   input.value='Edited';events.input({target:input});assert.match(status.textContent,/All changes saved/);
+  // History replaces a typing control without a change event.
+  input.value='Uncommitted';events.input({target:input});api.undo();api.redo();
+  assert.match(status.textContent,/All changes saved/, 'undo must discard stale pending typing');
+  api.undo();events.input({target:input});api.redo();
+  assert.match(status.textContent,/All changes saved/, 'redo must discard stale pending typing');
+  window.showSaveFilePicker=async()=>({createWritable:async()=>({write:async()=>{},close:async()=>{}})});
+  await api.saveFile();assert.match(status.textContent,/All changes saved/, 'saving after history must stay clean');
+  api.handle(null);
   let finish;window.showSaveFilePicker=async()=>({createWritable:async()=>({write:async()=>{},close:()=>new Promise(resolve=>finish=resolve)})});
   const saving=api.saveFile();while(!finish)await Promise.resolve();api.mutateInline(()=>api.get().title='During save');finish();await saving;assert.match(status.textContent,/Unsaved changes · Last saved:/);
   api.undo();assert.match(status.textContent,/All changes saved/);
