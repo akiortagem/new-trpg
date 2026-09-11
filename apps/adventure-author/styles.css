@@ -21,3 +21,6 @@ label.inline>[data-show-title]:focus-visible{outline:0;box-shadow:0 0 0 3px #82b
 .inspector:has(>.inspector-heading+ .field+label.inline)>.inspector-heading+ .field{grid-column:1;grid-row:2}
 .inspector:has(>.inspector-heading+ .field+label.inline)>.inspector-heading+ .field+label.inline{grid-column:2;grid-row:2;align-self:end;margin:0 0 15px}
 @media (forced-colors: active){label.inline>[data-show-title]:focus-visible{outline:2px solid Highlight;outline-offset:2px;box-shadow:none}}
+
+
+.state-dialog{width:min(900px,94vw);max-height:90vh;display:flex;flex-direction:column}.state-dialog .dialog-title-row{flex-shrink:0;padding-bottom:14px}.state-dialog h2{margin:0}.state-editor{min-height:0;overflow:auto}.state-editor .row{margin-bottom:8px}.state-editor .row.three{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto}.state-editor .card+.card{margin-top:8px}
