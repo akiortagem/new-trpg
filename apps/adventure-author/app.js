@@ -24,6 +24,8 @@
   const canvas = $("#canvas"), canvasViewport = $(".canvas-wrap"), edgesSvg = $("#edges"), inspector = $("#inspector"), sceneEditor = $("#sceneEditor");
   const fileLabel = $("#fileLabel");
   let adventure = null, selected = null, selectedChoice = null, selectedEnemy = null, fileHandle = null;
+  // Changes only when New/Open installs a different document, not for undo/redo.
+  let documentSession = 0;
   let history = [], future = [], dragging = null, suppressNodeOpen = null, connectionDragging = null, battleSceneId = null, battleSelectedZone = null, battleSubEditor = null;
 
   const clone = v => JSON.parse(JSON.stringify(v));
@@ -50,6 +52,7 @@
 
   function newAdventure(title,days){
     adventure=Model.createAdventureDraft(title,title,days);
+    documentSession++;
     fileHandle=null; selected="start"; selectedChoice=null; battleSubEditor=null; resetHistory(); render();
   }
 
@@ -66,19 +69,47 @@
     try{
       if(window.showOpenFilePicker){
         const [h]=await window.showOpenFilePicker({types:[{description:"Adventure JSON",accept:{"application/json":[".json"]}}],multiple:false});
-        const f=await h.getFile(), obj=JSON.parse(await f.text()); assertOpenable(obj); adventure=Model.migrateEnemyCatalog(obj); fileHandle=h; normalizeLayout(); selected=null; selectedChoice=null; battleSubEditor=null; resetHistory(); render(); return;
+        const f=await h.getFile(), obj=JSON.parse(await f.text()); assertOpenable(obj); adventure=Model.migrateEnemyCatalog(obj); documentSession++; fileHandle=h; normalizeLayout(); selected=null; selectedChoice=null; battleSubEditor=null; resetHistory(); render(); return;
       }
     }catch(e){ if(e.name==="AbortError")return; alert(e.message); return; }
     $("#fallbackOpen").click();
   }
-  $("#fallbackOpen").addEventListener("change",async e=>{ const f=e.target.files[0]; if(!f)return; try{const obj=JSON.parse(await f.text());assertOpenable(obj);adventure=Model.migrateEnemyCatalog(obj);fileHandle=null;normalizeLayout();selected=null;selectedChoice=null;battleSubEditor=null;resetHistory();render();}catch(err){alert(err.message)} e.target.value=""; });
+  $("#fallbackOpen").addEventListener("change",async e=>{ const f=e.target.files[0]; if(!f)return; try{const obj=JSON.parse(await f.text());assertOpenable(obj);adventure=Model.migrateEnemyCatalog(obj);documentSession++;fileHandle=null;normalizeLayout();selected=null;selectedChoice=null;battleSubEditor=null;resetHistory();render();}catch(err){alert(err.message)} e.target.value=""; });
+  let saveToastTimer = null;
+  function showSaveToast(message){
+    const toast=$("#saveToast");
+    clearTimeout(saveToastTimer);
+    toast.textContent=message;
+    toast.hidden=false;
+    saveToastTimer=setTimeout(()=>{toast.hidden=true;toast.textContent="";},5000);
+  }
   async function saveFile(){
-    if(!adventure)return; const text=JSON.stringify(adventure,null,2)+"\n";
-    if(fileHandle){ try{const w=await fileHandle.createWritable();await w.write(text);await w.close();fileLabel.textContent=`${adventure.id}.json`;return;}catch(e){alert(`Could not overwrite the file: ${e.message}`);return;} }
+    if(!adventure)return;
+    const savingSession=documentSession;
+    const text=JSON.stringify(adventure,null,2)+"\n",filename=`${adventure.id}.json`;
+    const toast=$("#saveToast");clearTimeout(saveToastTimer);toast.hidden=true;toast.textContent="";
+    $("#saveBtn").disabled=true;
     try{
-      if(window.showSaveFilePicker){fileHandle=await window.showSaveFilePicker({suggestedName:`${adventure.id}.json`,types:[{description:"Adventure JSON",accept:{"application/json":[".json"]}}]});const w=await fileHandle.createWritable();await w.write(text);await w.close();fileLabel.textContent=`${adventure.id}.json`;return;}
-    }catch(e){if(e.name==="AbortError")return;}
-    const blob=new Blob([text],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`${adventure.id}.json`;a.click();URL.revokeObjectURL(a.href);alert("This browser cannot overwrite the original file directly. A new JSON file was downloaded instead.");
+      if(fileHandle||window.showSaveFilePicker){
+        const handle=fileHandle||await window.showSaveFilePicker({suggestedName:filename,types:[{description:"Adventure JSON",accept:{"application/json":[".json"]}}]});
+        const writable=await handle.createWritable();
+        await writable.write(text);
+        await writable.close();
+        // A completed write belongs to the document that started it.
+        if(documentSession!==savingSession)return;
+        fileHandle=handle;
+        fileLabel.textContent=filename;
+        showSaveToast("Adventure successfully saved.");
+        return;
+      }
+      const blob=new Blob([text],{type:"application/json"}),link=document.createElement("a"),url=URL.createObjectURL(blob);
+      try{
+        link.href=url;link.download=filename;document.body.appendChild(link);link.click();
+        showSaveToast("Adventure download started. Check your browser downloads for the saved JSON file.");
+      }finally{link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+    }catch(error){
+      if(error.name!=="AbortError")alert(`Could not save the adventure: ${error.message}`);
+    }finally{$("#saveBtn").disabled=false;}
   }
 
   function outputsFor(scene){
