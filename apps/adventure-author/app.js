@@ -38,6 +38,9 @@
     if(!status)return;
     status.hidden=!adventure;
     if(!adventure)return;
+    // Replaced editor controls cannot contain pending edits to this document.
+    // Keep connected controls: they may contain typing made during a save.
+    for(const input of pendingInputs.keys())if(!input.isConnected)pendingInputs.delete(input);
     const dirty=pendingInputs.size>0||JSON.stringify(adventure)!==savedSnapshot;
     const saved=lastSavedAt?`Last saved: ${lastSavedAt.toLocaleString()}`:"Never saved";
     status.textContent=`${dirty?"Unsaved changes":"All changes saved"} · ${saved}${lastDownloadAt?` · Download started: ${lastDownloadAt.toLocaleString()} (save unconfirmed)`:""}`;
